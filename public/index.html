@@ -559,7 +559,7 @@ textarea{display:block;width:100%;min-height:92px;padding:11px 13px;background:v
 .login-bgblur{position:fixed;inset:-40px;z-index:0;background:var(--login-img) center top/cover no-repeat;filter:blur(30px) brightness(.34) saturate(1.25);pointer-events:none}
 .login-wrap{position:relative;z-index:1;width:min(560px,100%);margin:0 auto;padding:0 0 28px}
 .login-hero{width:100%;aspect-ratio:1024/655;background:var(--login-img) center top/100% auto no-repeat;-webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
-.login-card{position:relative;margin:-30px 18px 0;padding:24px 22px 22px;border-radius:18px;background:rgba(13,17,21,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(244,123,32,.5);box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 44px rgba(244,123,32,.10)}
+.login-card{position:relative;margin:-34px 18px 0;padding:24px 22px 22px;border-radius:18px;background:rgba(13,17,21,.84);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(244,123,32,.5);box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 44px rgba(244,123,32,.10)}
 .login-title{display:flex;align-items:center;gap:12px;margin-bottom:20px;font-size:23px}
 .login-title .ic{width:26px;height:26px;color:var(--orange)}
 .input-ic{position:relative}
@@ -4025,7 +4025,7 @@ async function saveMonthlyStart(driverId){
 
   if(error){
     console.error(error);
-    alert("KM kaydedilemedi: "+error.message);
+    alert("KM kaydedilemedi: "+error.message+(/end_km/.test(error.message || "") ? "\n\nÇözüm: Supabase > SQL Editor'de km_sutun_duzeltme.sql dosyasını bir kez çalıştırın." : ""));
     return;
   }
 
@@ -6127,52 +6127,6 @@ function closeDriverModal(){
 }
 
 
-async function toggleDriver(driverId){
-
-  if(!confirm(
-    "Şoförün aktiflik durumunu değiştirmek istiyor musunuz?"
-  )){
-    return;
-  }
-
-
-  try{
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .functions
-        .invoke(
-          "manage-driver",
-          {
-            body:{
-              action:"toggle",
-              driverId
-            }
-          }
-        );
-
-
-    if(error)
-      throw error;
-
-
-    await loadAdminData();
-
-
-  }catch(error){
-
-    console.error(error);
-
-    alert(
-      error.message ||
-      "İşlem başarısız."
-    );
-  }
-}
-
-
 async function deleteDriver(driverId){
 
   const hasRecords=
@@ -7271,7 +7225,11 @@ async function fnErrorMessage(error,fallback){
       if(m)return String(m);
     }
   }catch(e){}
-  return (error && error.message) || fallback || "İşlem gerçekleştirilemedi.";
+  const m=(error && error.message) || "";
+  if(/Failed to send a request to the Edge Function/i.test(m)){
+    return "Sunucu fonksiyonu çalışmıyor (manage-driver Supabase'de yayınlanmamış olabilir).";
+  }
+  return m || fallback || "İşlem gerçekleştirilemedi.";
 }
 
 function cleanPhone(v){
@@ -8476,25 +8434,30 @@ async function saveDriver(){
 
         console.error("manage-driver:",fnError);
 
+        const reason=await fnErrorMessage(fnError,"Kullanıcı adı veya şifre değiştirilemedi.");
         const sameUser=String(orig.username || "").toLowerCase()===username.toLowerCase();
 
-        if(sameUser && !password){
+        if(!sameUser){
+          throw new Error(reason);
+        }
 
-          /* Sunucu fonksiyonu çalışmadıysa ad, telefon ve plakayı doğrudan kaydet */
-          const {data,error}=await supabaseClient
-            .from("profiles")
-            .update({full_name:fullName,phone:phone || null,plate:plate})
-            .eq("id",editId)
-            .select("id");
+        /* Sunucu fonksiyonu çalışmadıysa ad, telefon ve plakayı doğrudan kaydet */
+        const {data,error}=await supabaseClient
+          .from("profiles")
+          .update({full_name:fullName,phone:phone || null,plate:plate})
+          .eq("id",editId)
+          .select("id");
 
-          if(error)throw error;
+        if(error)throw error;
 
-          if(!data || !data.length){
-            throw new Error("Kayıt yapılamadı: yetki yok. Supabase'de filora_guncelleme.sql dosyasını çalıştırın.");
-          }
+        if(!data || !data.length){
+          throw new Error("Kayıt yapılamadı: yetki yok. Supabase'de filora_guncelleme.sql dosyasını çalıştırın.");
+        }
 
-        }else{
-          throw new Error(await fnErrorMessage(fnError,"Kullanıcı adı veya şifre değiştirilemedi."));
+        if(password){
+          await loadAdminData();
+          showStatus("driverModalStatus","Ad, telefon ve plaka kaydedildi. Şifre değiştirilemedi: "+reason,"error");
+          return;
         }
       }
 
@@ -8529,6 +8492,53 @@ async function saveDriver(){
 
   }finally{
     if(btn)btn.disabled=false;
+  }
+}
+
+
+async function toggleDriver(driverId){
+
+  if(!confirm("Şoförün aktiflik durumunu değiştirmek istiyor musunuz?"))return;
+
+  const p=profiles.find(x=>x.id===driverId);
+
+  try{
+
+    let fnError=null;
+
+    try{
+      const {error}=await supabaseClient.functions.invoke("manage-driver",{
+        body:{action:"toggle",driverId}
+      });
+      if(error)throw error;
+    }catch(e){
+      fnError=e;
+    }
+
+    if(fnError){
+
+      console.error("manage-driver:",fnError);
+
+      if(!p)throw fnError;
+
+      const {data,error}=await supabaseClient
+        .from("profiles")
+        .update({active:!p.active})
+        .eq("id",driverId)
+        .select("id");
+
+      if(error)throw error;
+
+      if(!data || !data.length){
+        throw new Error("Yetki yok. Supabase'de filora_guncelleme.sql dosyasını çalıştırın.");
+      }
+    }
+
+    await loadAdminData();
+
+  }catch(error){
+    console.error(error);
+    alert(await fnErrorMessage(error,"İşlem başarısız."));
   }
 }
 
