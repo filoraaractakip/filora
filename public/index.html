@@ -390,6 +390,15 @@ select:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(244,123,32,.2)
 .nav-item{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:15px;font-weight:600;text-align:left}
 .nav-item:hover{background:var(--panel);color:var(--text)}
 .nav-item.active{background:rgba(244,123,32,.14);color:var(--orange-hi)}
+
+/* Yedek araç menüsü */
+.nav-alt-vehicles{display:flex;flex-direction:column;gap:2px;padding:8px 0 2px;border-top:1px solid var(--line);margin-top:8px}
+.nav-alt-label{padding:8px 12px 4px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.nav-alt-item{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:0 12px 0 24px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:14px;font-weight:500;text-align:left;position:relative;overflow:hidden}
+.nav-alt-item::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:var(--orange);opacity:.5}
+.nav-alt-item:hover{background:var(--panel);color:var(--text)}
+.nav-alt-item.active{background:rgba(244,123,32,.14);color:var(--orange-hi)}
+.nav-alt-item.active::before{opacity:1;background:var(--orange-hi)}
 .side-foot{display:flex;flex-direction:column;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
 .live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
 .live i{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.18)}
@@ -757,6 +766,12 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           Evraklarım
         </button>
       </nav>
+
+      <!-- Yedek araçlar menüsü -->
+      <div id="navAltVehiclesContainer" class="nav-alt-vehicles hidden">
+        <div class="nav-alt-label">Yedek araçlar</div>
+        <div id="navAltVehiclesList"></div>
+      </div>
 
       <div class="side-foot">
         <button type="button" class="logout" id="driverLogout">Çıkış</button>
@@ -3306,8 +3321,17 @@ async function saveRecord(){
   }
 
 
+  // Seçilen yedek araçtaki kayıtları göster, yoksa normal kayıtları
   const driverRecords=
-    [...(activeChange() ? records.filter(r=>r.vehicle_change_id===activeChange().id) : ownRecords())]
+    [
+      ...(
+        selectedAltVehicleId 
+          ? records.filter(r=>r.vehicle_change_id===selectedAltVehicleId)
+          : activeChange() 
+            ? records.filter(r=>r.vehicle_change_id===activeChange().id) 
+            : ownRecords()
+      )
+    ]
       .sort(
         (a,b)=>
           getRecordDateTimeValue(a) -
@@ -5228,7 +5252,13 @@ function renderDriverTrips(){
 
   if(!driverTripMonth)driverTripMonth=currentMonthKey();
 
-  const month=trips.filter(t=>t.trip_date.slice(0,7)===driverTripMonth);
+  let month=trips.filter(t=>t.trip_date.slice(0,7)===driverTripMonth);
+  
+  // Seçilen yedek araç ise sadece o araçtaki sefer/KM'yi göster
+  if(selectedAltVehicleId){
+    month=month.filter(t=>t.vehicle_change_id===selectedAltVehicleId);
+  }
+  
   const sum=month.reduce((t,x)=>t+Number(x.total || 0),0);
   const branda=month.filter(x=>x.branda).length;
 
@@ -7845,6 +7875,8 @@ function showDriverTab(tab){
     renderDocForm();
     loadMyDocs().then(renderMyDocs);
   }
+
+  renderAltVehiclesMenu();
 }
 
 
@@ -9301,6 +9333,48 @@ async function loadVehicleChanges(){
   }
 }
 
+/* Yedek araçlar menüsünü menüye ekle */
+function renderAltVehiclesMenu(){
+  const container=document.getElementById("navAltVehiclesList");
+  const wrapper=document.getElementById("navAltVehiclesContainer");
+  if(!container || !wrapper)return;
+
+  // Sadece bitirilmiş araç değişikliklerini göster
+  const completed=vehicleChanges.filter(v=>v.end_at).slice(0,10);
+
+  if(!completed.length){
+    wrapper.classList.add("hidden");
+    return;
+  }
+
+  wrapper.classList.remove("hidden");
+
+  container.innerHTML=completed.map(v=>`
+    <button type="button" class="nav-alt-item" onclick="selectAltVehicle('${v.id}')">
+      <span style="font-family:var(--font-d);font-weight:600">${escapeHtml(v.plate || "?")}</span>
+      <small style="color:var(--muted);font-size:12px">${new Date(v.start_at).toLocaleDateString("tr-TR",{month:"short",day:"numeric"})}</small>
+    </button>
+  `).join("");
+
+  updateAltVehicleMenuState();
+}
+
+function updateAltVehicleMenuState(){
+  const curr=selectedAltVehicleId;
+  document.querySelectorAll(".nav-alt-item").forEach(btn=>{
+    const id=btn.onclick?.toString().match(/'([^']+)'/)?.[1];
+    btn.classList.toggle("active", id===curr);
+  });
+}
+
+let selectedAltVehicleId=null;
+
+function selectAltVehicle(vehicleChangeId){
+  selectedAltVehicleId=vehicleChangeId;
+  updateAltVehicleMenuState();
+  showDriverTab("fuel");
+}
+
 function altSessionStats(v){
 
   const recs=records.filter(r=>r.vehicle_change_id===v.id);
@@ -9373,21 +9447,38 @@ function applyVehicleTypeUi(type){
 function renderAltBanners(){
 
   const act=activeChange();
+  const selectedVehicle=selectedAltVehicleId ? vehicleChanges.find(v=>v.id===selectedAltVehicleId) : null;
 
   ["altBannerFuel","altBannerTrip"].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
 
-    if(!act){
+    let vehicleInfo=null;
+    
+    if(selectedVehicle){
+      vehicleInfo={
+        type:"seçilen",
+        plate:selectedVehicle.plate,
+        action:`<button type="button" onclick="selectedAltVehicleId=null;renderAltVehiclesMenu();showDriverTab('fuel')">Ana aracıma dön</button>`
+      };
+    }else if(act){
+      vehicleInfo={
+        type:"mevcut",
+        plate:act.plate,
+        action:`<button type="button" onclick="goEndAlt()">Kendi aracıma döndüm</button>`
+      };
+    }
+
+    if(!vehicleInfo){
       el.classList.add("hidden");
       el.innerHTML="";
       return;
     }
 
     el.innerHTML=
-      `<div><strong>Yedek araç kullanıyorsunuz: ${escapeHtml(act.plate)}</strong>`+
-      `<span>Mazot, km ve seferleriniz bu plakayla işlenir.</span></div>`+
-      `<button type="button" onclick="goEndAlt()">Kendi aracıma döndüm</button>`;
+      `<div><strong>${vehicleInfo.type==="seçilen" ? "Yedek araçın verilerini görüntülüyorsunuz: " : "Yedek araç kullanıyorsunuz: "}${escapeHtml(vehicleInfo.plate)}</strong>`+
+      `<span>${vehicleInfo.type==="seçilen" ? "Bu araçtaki mazot, km ve seferler gösteriliyor." : "Mazot, km ve seferleriniz bu plakayla işlenir."}</span></div>`+
+      `<div>${vehicleInfo.action}</div>`;
     el.classList.remove("hidden");
   });
 }
