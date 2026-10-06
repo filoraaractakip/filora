@@ -2234,10 +2234,11 @@ function normalizeNotificationPlate(plate){
   return String(plate||"").toUpperCase().replace(/[^0-9A-Z]/g,"");
 }
 
-function getDriverNotificationAudio(row,type){
+function getDriverNotificationAudio(row,type="available"){
+  if(type!=="available")return null;
   const p=profiles.find(x=>x.id===row?.driver_id)||{};
   const plate=normalizeNotificationPlate(row?.plate || p.plate || "");
-  return DRIVER_NOTIFICATION_AUDIO[plate]?.[type] || null;
+  return DRIVER_NOTIFICATION_AUDIO[plate]?.available || null;
 }
 
 
@@ -4197,8 +4198,8 @@ function showDesktopVehicleNotification(row){
 function showAdminVehicleNotification(row){
   adminVehicleNotifications=[row,...adminVehicleNotifications.filter(x=>x.id!==row.id)].slice(0,30);
   renderAdminVehicleNotifications();
-  if(row.status==="fuel_purchased")playAdminFuelNotificationSound(row);
-  else playAdminNotificationSound(row,false);
+  if(row.status==="available")playAdminNotificationSound(row,false);
+  else if(row.status==="fuel_purchased")playAdminFuelNotificationSound();
   showDesktopVehicleNotification(row);
   if(row.status==="fuel_purchased") toast(`⛽ ${row.driver_name || "Şoför"} akaryakıt alımını tamamladı.`);
   else toast(`🟢 ${row.driver_name || "Şoför"} aracı müsait bıraktı.`);
