@@ -2234,11 +2234,10 @@ function normalizeNotificationPlate(plate){
   return String(plate||"").toUpperCase().replace(/[^0-9A-Z]/g,"");
 }
 
-function getDriverNotificationAudio(row,type="available"){
-  if(type!=="available")return null;
+function getDriverNotificationAudio(row,type){
   const p=profiles.find(x=>x.id===row?.driver_id)||{};
   const plate=normalizeNotificationPlate(row?.plate || p.plate || "");
-  return DRIVER_NOTIFICATION_AUDIO[plate]?.available || null;
+  return DRIVER_NOTIFICATION_AUDIO[plate]?.[type] || null;
 }
 
 
@@ -4136,37 +4135,18 @@ async function enableAdminNotifications(){
 function playAdminNotificationSound(row=null,test=false){
   if(!adminNotificationReady)return;
   try{
-    const audio=adminNotificationAudio || document.getElementById("adminVehicleNotificationAudio");
-    if(!audio)return;
-    if(!audio.dataset.genericSrc)audio.dataset.genericSrc=audio.currentSrc || audio.src || "";
-    const src=row ? getDriverNotificationAudio(row,"available") : null;
-    if(src)audio.src=src;
-    else if(audio.dataset.genericSrc)audio.src=audio.dataset.genericSrc;
-    audio.load();
-    audio.pause();
-    audio.currentTime=0;
-    audio.volume=test ? 0.65 : 0.9;
-    const p=audio.play();
-    if(p?.catch)p.catch(()=>{});
-  }catch(e){console.warn("Bildirim sesi çalınamadı:",e);}
+    const p=profiles.find(x=>x.id===row?.driver_id)||{};
+    const name=String(row?.driver_name || p.full_name || "Şoför").trim();
+    if(!name || !("speechSynthesis" in window))return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(`${name} araç müsait`);
+    u.lang="tr-TR"; u.rate=0.9; u.pitch=1; u.volume=test?0.7:1;
+    window.speechSynthesis.speak(u);
+  }catch(e){console.warn("Araç müsait sesi çalınamadı:",e);}
 }
 
 function playAdminFuelNotificationSound(row=null){
-  if(!adminNotificationReady)return;
-  try{
-    const audio=adminFuelNotificationAudio || document.getElementById("adminFuelNotificationAudio");
-    if(!audio)return;
-    if(!audio.dataset.genericSrc)audio.dataset.genericSrc=audio.currentSrc || audio.src || "";
-    const src=row ? getDriverNotificationAudio(row,"fuel") : null;
-    if(src)audio.src=src;
-    else if(audio.dataset.genericSrc)audio.src=audio.dataset.genericSrc;
-    audio.load();
-    audio.pause();
-    audio.currentTime=0;
-    audio.volume=0.9;
-    const p=audio.play();
-    if(p?.catch)p.catch(()=>{});
-  }catch(e){console.warn("Akaryakıt bildirim sesi çalınamadı:",e);}
+  // Akaryakıt bildirimi için ses kapalı.
 }
 
 function autoArmAdminNotifications(){
@@ -4198,8 +4178,8 @@ function showDesktopVehicleNotification(row){
 function showAdminVehicleNotification(row){
   adminVehicleNotifications=[row,...adminVehicleNotifications.filter(x=>x.id!==row.id)].slice(0,30);
   renderAdminVehicleNotifications();
-  if(row.status==="available")playAdminNotificationSound(row,false);
-  else if(row.status==="fuel_purchased")playAdminFuelNotificationSound();
+  if(row.status==="fuel_purchased")playAdminFuelNotificationSound(row);
+  else playAdminNotificationSound(row,false);
   showDesktopVehicleNotification(row);
   if(row.status==="fuel_purchased") toast(`⛽ ${row.driver_name || "Şoför"} akaryakıt alımını tamamladı.`);
   else toast(`🟢 ${row.driver_name || "Şoför"} aracı müsait bıraktı.`);
