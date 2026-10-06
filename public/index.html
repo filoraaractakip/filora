@@ -245,7 +245,13 @@ input::placeholder{color:#5f6b75}
   border-radius:8px;padding:7px 11px;font-size:13px;font-weight:500;
 }
 .actions button:hover,.inline-edit button:hover,td button:hover{border-color:#44515c}
+
 .actions .danger{color:var(--red);border-color:rgba(255,123,123,.28)}
+.bulk-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;background:var(--field);border:1px solid var(--line);border-radius:10px}
+.bulk-toolbar .bulk-count{color:var(--muted);font-size:13px}
+.bulk-check{width:18px;height:18px;accent-color:var(--orange);cursor:pointer}
+.alt-actions{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap}
+
 
 /* ---------- Kayıt tablosu ---------- */
 .filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:14px}
@@ -742,6 +748,14 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>
           Sefer tablosu
         </button>
+        <button type="button" class="nav-item" data-dview="earnings" onclick="showDriverTab('earnings')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 .8-3 2s1.1 1.9 3 2.2 3 .8 3 2.2-1.3 2.2-3 2.2c-1.3 0-2.4-.4-3.1-1.2"/></svg>
+          Kazançlar
+        </button>
+        <button type="button" class="nav-item" data-dview="vehicle" onclick="openDriverVehicleMenu()">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l3 4v6h-2M3 7h4v10H3zM7 17h8"/><circle cx="9" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
+          Araç değişikliği
+        </button>
         <button type="button" class="nav-item" data-dview="leave" onclick="showDriverTab('leave')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
           İzin
@@ -798,14 +812,6 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <button type="button" class="record-type-btn" data-record-type="adblue">
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5A6 6 0 0 1 6 13.5C6 9.2 12 3 12 3z"/></svg>
             AdBlue
-          </button>
-          <button type="button" class="record-type-btn" data-record-type="km">
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-            KM
-          </button>
-          <button type="button" class="record-type-btn" data-record-type="vehicle">
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11l3 4v6h-2M3 7h4v10H3zM7 17h8"/><circle cx="9" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>
-            Araç değişikliği
           </button>
         </div>
       </div>
@@ -1038,6 +1044,24 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
     </div>
 
     <!-- İZİN -->
+    <div id="driverEarningsView" hidden>
+      <section class="panel" aria-labelledby="driverEarningsTitle">
+        <div class="panel-head">
+          <h2 id="driverEarningsTitle">Kazançlarım</h2>
+          <span>Admin oranları</span>
+        </div>
+        <div class="stats stats-3" style="margin-bottom:16px">
+          <div class="stat earn"><div class="stat-label">Yakıt oranı kazancı</div><div class="stat-value"><span id="driverFuelRateEarning">0</span><small>TL</small></div><span class="stat-note">litre × yakıt oranı</span></div>
+          <div class="stat earn"><div class="stat-label">KM kazancı</div><div class="stat-value"><span id="driverKmEarning">0</span><small>TL</small></div><span class="stat-note">km farkı × KM oranı</span></div>
+          <div class="stat earn"><div class="stat-label">Sefer kazancı</div><div class="stat-value"><span id="driverTripEarning">0</span><small>TL</small></div><span class="stat-note">sefer toplamları</span></div>
+        </div>
+        <div class="stats" style="margin-bottom:16px">
+          <div class="stat earn"><div class="stat-label">Toplam kazanç</div><div class="stat-value"><span id="driverTotalEarning">0</span><small>TL</small></div><span class="stat-note">Yakıt + KM + Sefer</span></div>
+        </div>
+        <div id="driverEarningsNote" class="page-subtitle"></div>
+      </section>
+    </div>
+
     <div id="driverLeaveView" hidden>
 
       <section class="panel" aria-labelledby="leaveFormTitle">
@@ -1202,6 +1226,10 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h14M5 10h10M15 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg>
           Yakıt kayıtları
         </button>
+        <button type="button" class="nav-item" data-view="kazanc" onclick="showAdminView('kazanc')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 .8-3 2s1.1 1.9 3 2.2 3 .8 3 2.2-1.3 2.2-3 2.2c-1.3 0-2.4-.4-3.1-1.2"/></svg>
+          Şoför kazançları
+        </button>
         <button type="button" class="nav-item" data-view="seferler" onclick="showAdminView('seferler')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></svg>
           Sefer tablosu
@@ -1236,6 +1264,10 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>
           Evraklar
           <span class="nav-badge hidden" id="navBadgeDocs"></span>
+        </button>
+        <button type="button" class="nav-item" data-view="yedekleme" onclick="showAdminView('yedekleme')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0l-4-4m4 4l4-4"/><path d="M5 19h14"/></svg>
+          Yedek alma
         </button>
         <button type="button" class="nav-item" data-view="rapor" onclick="showAdminView('rapor')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M12 11v6m0 0l-2.5-2.5M12 17l2.5-2.5"/></svg>
@@ -1345,11 +1377,20 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
               <input type="date" id="filterEnd" aria-label="Filtre bitiş tarihi">
               <button type="button" class="btn-secondary" id="clearFiltersButton">Temizle</button>
             </div>
+            <div class="bulk-toolbar">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:600">
+                <input type="checkbox" class="bulk-check" id="selectAllRecords" onchange="toggleAllRecordSelection(this.checked)">
+                Tümünü seç
+              </label>
+              <span class="bulk-count" id="selectedRecordCount">0 kayıt seçildi</span>
+              <button type="button" class="btn-secondary" id="bulkDeleteButton" onclick="bulkDeleteRecords()" disabled>Seçilenleri toplu sil</button>
+            </div>
 
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
+                    <th style="width:44px"><input type="checkbox" class="bulk-check" aria-label="Tüm kayıtları seç" onchange="toggleAllRecordSelection(this.checked)"></th>
                     <th>Şoför / araç</th>
                     <th>Yakıt</th>
                     <th>AdBlue</th>
@@ -1363,6 +1404,24 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
               </table>
             </div>
             <div id="recordsMore" class="more-wrap"></div>
+          </section>
+        </section>
+
+
+        <!-- ŞOFÖR KAZANÇLARI -->
+        <section class="view hidden" id="view-kazanc">
+          <section class="panel" aria-labelledby="driverEarningsAdminTitle">
+            <div class="panel-head">
+              <h2 id="driverEarningsAdminTitle">Şoför kazançları</h2>
+              <span>Seçili tarih aralığı</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Şoför</th><th>Yakıt oranı</th><th>KM kazancı</th><th>Sefer kazancı</th><th>Toplam kazanç</th></tr></thead>
+                <tbody id="driverEarningsTable"></tbody>
+              </table>
+            </div>
+            <div id="driverEarningsAdminNote" class="page-subtitle" style="margin-top:12px"></div>
           </section>
         </section>
 
@@ -1507,6 +1566,22 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
             <div class="panel-head"><h2>Yedek araç kullanımı</h2><span id="altAdminCount"></span></div>
             <p class="page-subtitle" style="margin:-6px 0 16px">Şoförün aracı arızalandığında kullandığı farklı araçlar. Bu araçla yapılan mazot, km ve seferler şoförün kendi aracının hesabına karışmaz, Kayıtlar ve Seferler sayfalarında "Yedek araç" etiketiyle görünür.</p>
             <div id="adminAlt"></div>
+          </section>
+        </section>
+
+
+        <!-- YEDEK ALMA -->
+        <section class="view hidden" id="view-yedekleme">
+          <section class="panel">
+            <div class="panel-head"><h2>Sistem yedeği</h2></div>
+            <p class="page-subtitle" style="margin:-6px 0 16px">Şu anda uygulamanın Supabase'den yüklediği yönetim verilerini tek dosyada JSON olarak indirir. Orijinal kayıtlar silinmez veya değiştirilmez.</p>
+            <div class="report-actions">
+              <button type="button" class="btn-orange btn-sm" onclick="exportFiloraBackup()">
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0l-4-4m4 4l4-4"/><path d="M5 19h14"/></svg>
+                Yedek dosyasını indir
+              </button>
+            </div>
+            <div id="backupStatus" class="status" role="status" aria-live="polite"></div>
           </section>
         </section>
 
@@ -2369,13 +2444,15 @@ async function loadDriverData(){
   await Promise.all([
     loadDriverRecords(),
     loadMonthlyStartsForDriver(),
-    loadVehicleChanges()
+    loadVehicleChanges(),
+    loadAppSettings()
   ]);
 
   renderDriverSummary();
   renderDriverHistory();
   renderDriverMonthKm();
   await loadDriverTripData();
+  renderDriverEarnings();
   renderAltUi();
 }
 
@@ -3632,7 +3709,8 @@ async function loadAdminData(){
       loadLeaveRequests(),
       loadAnnouncements(),
       loadVehicleChanges(),
-      loadAllDocs()
+      loadAllDocs(),
+      loadAppSettings()
     ]);
 
 
@@ -3643,6 +3721,7 @@ async function loadAdminData(){
     renderRecords();
     renderAdminTrips();
     renderAdminTripStats();
+    renderAdminDriverEarnings();
     renderOptions();
     renderAdminLeaves();
     renderAdminAnnouncements();
@@ -4358,9 +4437,9 @@ function renderDriverMonthKm(){
         <div class="stat-value">${formatNumber(o.distance,0)}<small>km</small></div>
       </div>
       <div class="stat earn">
-        <div class="stat-label">Kazanç</div>
-        <div class="stat-value">${o.distance>0 ? formatNumber(o.distance*KM_RATE,0) : "—"}<small>TL</small></div>
-        <span class="stat-note">fark × ${KM_RATE}</span>
+        <div class="stat-label">Yakıt / KM kazancı</div>
+        <div class="stat-value">${o.distance>0 ? formatNumber(o.distance*kmRate,0) : "—"}<small>TL</small></div>
+        <span class="stat-note">fark × ${kmRate}</span>
       </div>
     `;
 
@@ -4416,9 +4495,9 @@ function renderDriverMonthKm(){
       <div class="stat-value">${diff!==null ? formatNumber(diff,0) : "—"}<small>km</small></div>
     </div>
     <div class="stat earn">
-      <div class="stat-label">Kazanç</div>
-      <div class="stat-value">${(diff!==null && diff>0) ? formatNumber(diff*KM_RATE,0) : "—"}<small>TL</small></div>
-      <span class="stat-note">fark × ${KM_RATE}</span>
+      <div class="stat-label">Yakıt / KM kazancı</div>
+      <div class="stat-value">${(diff!==null && diff>0) ? formatNumber(diff*kmRate,0) : "—"}<small>TL</small></div>
+      <span class="stat-note">fark × ${kmRate}</span>
     </div>
   `;
 }
@@ -4648,13 +4727,14 @@ function setupNoteHtml(){
 ========================================================= */
 
 let tripForm={load:"",city:"",district:"",company:"",amount:0,branda:false};
+let tripModalDriverMode=false;
 
 function initializeTripDate(){
   const el=document.getElementById("tripDate");
   if(!el)return;
-  el.min=getCurrentPeriod().start;
+  el.removeAttribute("min");
   el.max=getIstanbulDateString();
-  if(!el.value || el.value<el.min)el.value=el.max;
+  if(!el.value || el.value>el.max)el.value=el.max;
 }
 
 function tripDest(t){
@@ -4802,11 +4882,6 @@ async function saveTrip(){
     return;
   }
 
-  if(date<getCurrentPeriod().start){
-    showStatus("tripStatus","Sefer sadece içinde bulunulan aya girilebilir.","error");
-    return;
-  }
-
   if(!tripForm.load){
     showStatus("tripStatus","Yükleme yerini seçin.","error");
     return;
@@ -4900,6 +4975,7 @@ async function refreshTripsForPeriod(){
   await loadAdminTrips();
   renderAdminTrips();
   renderAdminTripStats();
+  renderAdminDriverEarnings();
 }
 
 function renderAdminTripStats(){
@@ -5030,6 +5106,16 @@ function fillSelect(id,values,current){
   el.value=current || (list[0] || "");
 }
 
+function openDriverTripModal(id){
+  tripModalDriverMode=true;
+  openTripModal(id);
+  const field=document.getElementById("tripModalDriver")?.closest(".field");
+  if(field)field.classList.add("hidden");
+  const t=id ? trips.find(x=>x.id===id) : null;
+  const title=document.getElementById("tripModalTitle");
+  if(title)title.textContent=t ? "Seferimi düzelt" : "Sefer";
+}
+
 function openTripModal(id){
 
   if(!tripsReady()){
@@ -5078,12 +5164,15 @@ function fillModalDistricts(selected){
 
 function closeTripModal(){
   document.getElementById("tripModal").classList.remove("show");
+  tripModalDriverMode=false;
+  const field=document.getElementById("tripModalDriver")?.closest(".field");
+  if(field)field.classList.remove("hidden");
 }
 
 async function saveTripModal(){
 
   const id=document.getElementById("tripEditId").value;
-  const driverId=document.getElementById("tripModalDriver").value;
+  const driverId=tripModalDriverMode ? currentUser.id : document.getElementById("tripModalDriver").value;
   const date=document.getElementById("tripModalDate").value;
   const load=document.getElementById("tripModalLoad").value;
   const city=document.getElementById("tripModalCity").value;
@@ -5130,9 +5219,16 @@ async function saveTripModal(){
     return;
   }
 
+  const driverMode=tripModalDriverMode;
   closeTripModal();
   toast(id ? "Sefer güncellendi." : "Sefer eklendi.");
-  await refreshTripsForPeriod();
+  if(driverMode){
+    await loadDriverTrips();
+    driverTripMonth=date.slice(0,7);
+    renderDriverTrips();
+  }else{
+    await refreshTripsForPeriod();
+  }
 }
 
 async function deleteTrip(id){
@@ -5149,6 +5245,22 @@ async function deleteTrip(id){
 
   toast("Sefer silindi.");
   await refreshTripsForPeriod();
+}
+
+async function deleteDriverTrip(id){
+  const trip=trips.find(x=>x.id===id);
+  if(!trip || trip.driver_id!==currentUser.id)return;
+  const ok=await askConfirm("Bu sefer kaydı silinsin mi?","Sil");
+  if(!ok)return;
+  const {error}=await supabaseClient.from("trips").delete().eq("id",id).eq("driver_id",currentUser.id);
+  if(error){
+    console.error(error);
+    toast("Sefer silinemedi: "+error.message,"error");
+    return;
+  }
+  toast("Sefer silindi.");
+  await loadDriverTrips();
+  renderDriverTrips();
 }
 
 /* =========================================================
@@ -5245,9 +5357,10 @@ function renderDriverTrips(){
         <div class="stat-label">Sefer</div>
         <div class="stat-value">${month.length}</div>
       </div>
-      <div class="stat">
-        <div class="stat-label">Toplam</div>
+      <div class="stat earn">
+        <div class="stat-label">Sefer kazancı</div>
         <div class="stat-value">${formatNumber(sum,0)}<small>TL</small></div>
+        <span class="stat-note">Sefer toplamları</span>
       </div>
       <div class="stat">
         <div class="stat-label">Branda</div>
@@ -5275,7 +5388,13 @@ function renderDriverTrips(){
           <strong>${escapeHtml(t.load_place)} &rarr; ${escapeHtml(tripDest(t))}</strong>
           <span>${t.company ? escapeHtml(t.company)+" · " : ""}${fmtDate(t.trip_date)} · ${dayName}${tierTagHtml(t.amount)}${t.alt_plate ? ' <span class="tag">'+escapeHtml(t.alt_plate)+'</span>' : ""}${t.branda ? ' <span class="tag">Branda</span>' : ""}</span>
         </div>
-        <div class="trip-amt">${tripMoney(t.total)}${t.branda ? `<small>${tripMoney(t.amount)} + ${tripMoney(t.branda_fee)}</small>` : ""}</div>
+        <div class="trip-amt">
+          ${tripMoney(t.total)}${t.branda ? `<small>${tripMoney(t.amount)} + ${tripMoney(t.branda_fee)}</small>` : ""}
+          <div class="actions" style="margin-top:7px;justify-content:flex-end">
+            <button type="button" onclick="openDriverTripModal('${t.id}')">Düzelt</button>
+            <button type="button" class="danger" onclick="deleteDriverTrip('${t.id}')">Sil</button>
+          </div>
+        </div>
       </div>
     `;
   }).join("");
@@ -6109,6 +6228,82 @@ async function saveBrandaFee(){
 
 
 /* =========================================================
+   ŞOFÖR KAZANÇLARI
+========================================================= */
+
+function dateInRange(date,start,end){
+  return !!date && (!start || date>=start) && (!end || date<=end);
+}
+
+function driverFuelEarnings(driverId,start,end){
+  return records.filter(r=>r.driver_id===driverId && dateInRange(r.fuel_date,start,end)).reduce((sum,r)=>sum+Number(r.fuel_liters||0)*Number(fuelRate||0),0);
+}
+
+function driverKmEarnings(driverId,start,end){
+  /* Kendi aracıyla yapılan km kazancı */
+  const info=getCycleInfo(driverId);
+  let total=0;
+  info.closed.forEach(c=>{
+    if(dateInRange(c.endDate,start,end)) total+=Number(c.distance||0)*Number(kmRate||0);
+  });
+  if(info.open && dateInRange(info.open.endDate,start,end)){
+    total+=Number(info.open.distance||0)*Number(kmRate||0);
+  }
+
+  /* Yedek araçla yapılan kilometreler de şoförün KM kazancına dahildir.
+     Her yedek araç oturumunun mesafesi ayrıca eklenir; böylece kendi araç
+     dönemleriyle çakışmadan toplam kazanç doğru hesaplanır. */
+  vehicleChanges
+    .filter(v=>v.driver_id===driverId)
+    .forEach(v=>{
+      const st=altSessionStats(v);
+      const sessionDate=v.end_at
+        ? getIstanbulDateString(new Date(v.end_at))
+        : (records
+            .filter(r=>r.driver_id===driverId && r.vehicle_change_id===v.id)
+            .sort((a,b)=>getRecordDateTimeValue(b)-getRecordDateTimeValue(a))[0]?.fuel_date ||
+           getIstanbulDateString(new Date(v.start_at)));
+      if(st.distance!==null && dateInRange(sessionDate,start,end)){
+        total+=Number(st.distance||0)*Number(kmRate||0);
+      }
+    });
+
+  return total;
+}
+
+function driverTripEarnings(driverId,start,end){
+  return trips.filter(t=>t.driver_id===driverId && dateInRange(t.trip_date,start,end)).reduce((sum,t)=>sum+Number(t.total||0),0);
+}
+
+function renderDriverEarnings(){
+  const fuelEl=document.getElementById("driverFuelRateEarning");
+  if(!fuelEl || !currentUser)return;
+  const fuel=driverFuelEarnings(currentUser.id,"","");
+  const km=driverKmEarnings(currentUser.id,"","");
+  const trip=driverTripEarnings(currentUser.id,"","");
+  fuelEl.textContent=formatNumber(fuel,0);
+  document.getElementById("driverKmEarning").textContent=formatNumber(km,0);
+  document.getElementById("driverTripEarning").textContent=formatNumber(trip,0);
+  document.getElementById("driverTotalEarning").textContent=formatNumber(fuel+km+trip,0);
+  const note=document.getElementById("driverEarningsNote");
+  if(note)note.textContent=`Yakıt oranı: ${formatNumber(fuelRate,2)} TL/litre · KM oranı: ${formatNumber(kmRate,2)} TL/km`;
+}
+
+function renderAdminDriverEarnings(){
+  const tbody=document.getElementById("driverEarningsTable");
+  if(!tbody)return;
+  const start=adminStartDate,end=adminEndDate;
+  tbody.innerHTML=profiles.map(p=>{
+    const fuel=driverFuelEarnings(p.id,start,end);
+    const km=driverKmEarnings(p.id,start,end);
+    const trip=driverTripEarnings(p.id,start,end);
+    return `<tr><td><strong>${escapeHtml(p.full_name||"—")}</strong><br><small>${escapeHtml(p.plate||"")}</small></td><td>${formatNumber(fuel,0)} TL</td><td>${formatNumber(km,0)} TL</td><td>${formatNumber(trip,0)} TL</td><td><strong>${formatNumber(fuel+km+trip,0)} TL</strong></td></tr>`;
+  }).join("") || `<tr><td colspan="5"><div class="empty">Şoför bulunamadı.</div></td></tr>`;
+  const note=document.getElementById("driverEarningsAdminNote");
+  if(note)note.textContent=`Yakıt oranı ${formatNumber(fuelRate,2)} TL/litre · KM oranı ${formatNumber(kmRate,2)} TL/km. Oranlar yalnızca yönetici tarafından değiştirilebilir.`;
+}
+
+/* =========================================================
    YÖNETİCİ MENÜSÜ VE OTOMATİK YENİLEME
 ========================================================= */
 
@@ -6116,6 +6311,7 @@ const ADMIN_VIEWS={
   overview:"Genel bakış",
   kayitlar:"Yakıt kayıtları",
   seferler:"Sefer tablosu",
+  kazanc:"Şoför kazançları",
   soforler:"Şoförler",
   araclar:"Araçlar ve km",
   secenekler:"Sefer seçenekleri",
@@ -6126,7 +6322,7 @@ const ADMIN_VIEWS={
   rapor:"Rapor"
 };
 
-const PERIOD_VIEWS=["overview","kayitlar","seferler","rapor"];
+const PERIOD_VIEWS=["overview","kayitlar","seferler","kazanc","rapor"];
 
 let adminTimer=null;
 let lastAdminRefresh=0;
@@ -6507,7 +6703,7 @@ function renderRecords(){
 
   if(!list.length){
     tbody.innerHTML=
-      `<tr><td colspan="7"><div class="empty">Seçilen tarih aralığında kayıt bulunmuyor.</div></td></tr>`;
+      `<tr><td colspan="8"><div class="empty">Seçilen tarih aralığında kayıt bulunmuyor.</div></td></tr>`;
     if(more)more.innerHTML="";
     return;
   }
@@ -6522,6 +6718,7 @@ function renderRecords(){
 
     return `
       <tr>
+        <td><input type="checkbox" class="bulk-check record-select" data-record-id="${record.id}" onchange="updateRecordSelectionUi()"></td>
         <td>
           <strong>${escapeHtml(profile?.full_name || "—")}</strong><br>
           ${record.alt_plate ? escapeHtml(record.alt_plate)+' <span class="tag">Yedek araç</span>' : escapeHtml(profile?.plate || "—")}
@@ -6551,6 +6748,49 @@ function renderRecords(){
       ? `<button type="button" class="more-btn" onclick="showMoreRecords()">Daha fazla göster (${left} kayıt daha)</button>`
       : "";
   }
+}
+
+function getSelectedRecordIds(){
+  return [...document.querySelectorAll(".record-select:checked")].map(x=>x.dataset.recordId).filter(Boolean);
+}
+
+function updateRecordSelectionUi(){
+  const ids=getSelectedRecordIds();
+  const count=document.getElementById("selectedRecordCount");
+  const btn=document.getElementById("bulkDeleteButton");
+  if(count)count.textContent=`${ids.length} kayıt seçildi`;
+  if(btn)btn.disabled=!ids.length;
+  const all=document.getElementById("selectAllRecords");
+  const boxes=[...document.querySelectorAll(".record-select")];
+  if(all){
+    all.checked=boxes.length>0 && boxes.every(x=>x.checked);
+    all.indeterminate=boxes.some(x=>x.checked) && !all.checked;
+  }
+}
+
+function toggleAllRecordSelection(checked){
+  document.querySelectorAll(".record-select").forEach(x=>x.checked=checked);
+  updateRecordSelectionUi();
+}
+
+async function bulkDeleteRecords(){
+  const ids=getSelectedRecordIds();
+  if(!ids.length)return;
+  const ok=await askConfirm(`${ids.length} yakıt/AdBlue/KM kaydı kalıcı olarak silinsin mi?`,"Toplu sil");
+  if(!ok)return;
+  const selected=records.filter(r=>ids.includes(r.id));
+  const {error}=await supabaseClient.from("fuel_records").delete().in("id",ids);
+  if(error){
+    console.error(error);
+    toast("Toplu silme başarısız: "+error.message,"error");
+    return;
+  }
+  const paths=selected.map(r=>r.receipt_path).filter(Boolean);
+  if(paths.length){
+    try{await supabaseClient.storage.from("fuel-receipts").remove(paths);}catch(e){console.warn(e);}
+  }
+  toast(`${ids.length} kayıt silindi.`);
+  await loadAdminData();
 }
 
 async function toggleMonthEnd(id){
@@ -6882,6 +7122,171 @@ function clearFilters(){
   renderRecords();
 }
 
+
+async function exportFiloraBackup(){
+  try{
+    const backupStatus=document.getElementById("backupStatus");
+    if(backupStatus)showStatus("backupStatus","Tüm veriler ve dosyalar hazırlanıyor...","success");
+
+    /* Yedek için verileri ekrandaki değişkenlerden değil,
+       Supabase'dan yeniden ve mümkün olduğunca eksiksiz çek. */
+    const tableNames=[
+      "profiles",
+      "fuel_records",
+      "trips",
+      "vehicle_changes",
+      "trip_options",
+      "monthly_km_starts",
+      "leave_requests",
+      "announcements",
+      "driver_documents",
+      "app_settings"
+    ];
+
+    const tables={};
+    const errors=[];
+
+    for(const table of tableNames){
+      try{
+        tables[table]=await fetchAllRows(()=>
+          supabaseClient.from(table).select("*")
+        );
+      }catch(error){
+        console.error("Yedek tablosu:",table,error);
+        tables[table]=[];
+        errors.push(`${table}: ${error.message || "okunamadı"}`);
+      }
+    }
+
+    /* Supabase Storage içindeki gerçek dosyaları da yedeğe dahil et. */
+    async function listAllStorageFiles(bucket,path=""){
+      const files=[];
+      let offset=0;
+      const limit=1000;
+
+      while(true){
+        const {data,error}=await supabaseClient.storage
+          .from(bucket)
+          .list(path,{limit,offset,sortBy:{column:"name",order:"asc"}});
+
+        if(error)throw error;
+        const items=data || [];
+        if(!items.length)break;
+
+        for(const item of items){
+          const fullPath=path ? `${path}/${item.name}` : item.name;
+
+          /* Supabase Storage klasörlerini id'siz döndürür. */
+          if(item.id===null || item.metadata===null){
+            const nested=await listAllStorageFiles(bucket,fullPath);
+            files.push(...nested);
+          }else{
+            files.push({
+              bucket,
+              path:fullPath,
+              size:item.metadata?.size ?? null,
+              contentType:item.metadata?.mimetype || item.metadata?.contentType || null,
+              created_at:item.created_at || null,
+              updated_at:item.updated_at || null
+            });
+          }
+        }
+
+        if(items.length<limit)break;
+        offset+=limit;
+      }
+
+      return files;
+    }
+
+    const storageFiles=[];
+    for(const bucket of ["fuel-receipts","driver-documents"]){
+      try{
+        const files=await listAllStorageFiles(bucket);
+        storageFiles.push(...files);
+      }catch(error){
+        console.error("Yedek storage:",bucket,error);
+        errors.push(`${bucket}: ${error.message || "dosyalar listelenemedi"}`);
+      }
+    }
+
+    /* ZIP için JSZip'i yalnızca yedek alınırken yükle. */
+    if(typeof JSZip==="undefined"){
+      await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    }
+
+    const zip=new JSZip();
+    const exportedAt=new Date().toISOString();
+
+    const payload={
+      exported_at:exportedAt,
+      app:"FILORA",
+      backup_version:2,
+      backup_type:"full",
+      tables,
+      storage_files:storageFiles.map(f=>({
+        bucket:f.bucket,
+        path:f.path,
+        size:f.size,
+        contentType:f.contentType,
+        created_at:f.created_at,
+        updated_at:f.updated_at
+      })),
+      settings:{fuel_km_rate:kmRate},
+      warnings:errors
+    };
+
+    zip.file("FILORA_veriler.json",JSON.stringify(payload,null,2));
+
+    /* Storage dosyalarının kendilerini de ZIP'e koy. */
+    for(const file of storageFiles){
+      try{
+        const {data,error}=await supabaseClient.storage
+          .from(file.bucket)
+          .download(file.path);
+
+        if(error)throw error;
+        if(data)zip.file(`storage/${file.bucket}/${file.path}`,data);
+      }catch(error){
+        console.error("Yedek dosyası:",file.bucket,file.path,error);
+        errors.push(`${file.bucket}/${file.path}: ${error.message || "indirilemedi"}`);
+      }
+    }
+
+    /* Dosya indirmeleri sırasında oluşan uyarıları JSON'a da yaz. */
+    payload.warnings=errors;
+    zip.file("FILORA_veriler.json",JSON.stringify(payload,null,2));
+
+    const blob=await zip.generateAsync({
+      type:"blob",
+      compression:"DEFLATE",
+      compressionOptions:{level:6}
+    });
+
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`FILORA_TAM_YEDEK_${getIstanbulDateString()}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+
+    const warningText=errors.length
+      ? ` Yedek oluşturuldu ancak ${errors.length} öğe okunamadı; ayrıntılar FILORA_veriler.json içindeki "warnings" alanında.`
+      : "";
+
+    showStatus(
+      "backupStatus",
+      `Tam yedek dosyası indirildi. ${Object.values(tables).reduce((n,v)=>n+v.length,0)} tablo kaydı ve ${storageFiles.length} dosya dahil edildi.${warningText}`,
+      errors.length ? "error" : "success"
+    );
+
+  }catch(error){
+    console.error(error);
+    showStatus("backupStatus","Tam yedek alınamadı: "+(error.message || "bilinmeyen hata"),"error");
+  }
+}
 
 /* =========================================================
    EXCEL
@@ -7421,7 +7826,58 @@ document.addEventListener(
    GÜNCELLEME — ORTAK YARDIMCILAR
 ========================================================= */
 
-const KM_RATE=3;   /* şoför kazancı = km farkı × 3 TL */
+let kmRate=3;   /* Varsayılan: km farkı × 3 TL */
+let fuelRate=0; /* Yakıt oranı: litre × TL/litre */
+
+async function loadAppSettings(){
+  try{
+    const {data,error}=await supabaseClient.from("app_settings").select("key,value").in("key",["fuel_km_rate","fuel_rate"]);
+    if(!error && Array.isArray(data)){
+      const kmRow=data.find(x=>x.key==="fuel_km_rate");
+      const fuelRow=data.find(x=>x.key==="fuel_rate");
+      if(kmRow && Number(kmRow.value)>=0)kmRate=Number(kmRow.value);
+      if(fuelRow && Number(fuelRow.value)>=0)fuelRate=Number(fuelRow.value);
+    }
+  }catch(e){
+    console.warn("app_settings okunamadı, varsayılan oran kullanılıyor.",e);
+  }
+}
+
+async function saveFuelRate(){
+  const el=document.getElementById("fuelRateInput");
+  const value=Number(el?.value || 0);
+  if(!(value>=0)){ toast("Geçerli bir yakıt oranı girin.","error"); return; }
+  const {error}=await supabaseClient.from("app_settings").upsert({key:"fuel_rate",value},{onConflict:"key"});
+  if(error){ console.error(error); toast("Yakıt oranı kaydedilemedi: "+error.message,"error"); return; }
+  fuelRate=value;
+  renderDriverEarnings();
+  renderAdminDriverEarnings();
+  renderOptions();
+  toast("Yakıt oranı güncellendi.");
+}
+
+async function saveKmRate(){
+  const el=document.getElementById("kmRateInput");
+  const value=Number(el?.value || 0);
+  if(!(value>0)){
+    toast("Geçerli bir KM kazanç oranı girin.","error");
+    return;
+  }
+  const {error}=await supabaseClient.from("app_settings").upsert({key:"fuel_km_rate",value},{onConflict:"key"});
+  if(error){
+    console.error(error);
+    toast("KM kazanç oranı kaydedilemedi: "+error.message,"error");
+    return;
+  }
+  kmRate=value;
+  toast("Yakıt/KM kazanç oranı güncellendi.");
+  renderDriverSummary();
+  renderDriverMonthKm();
+  renderDriverEarnings();
+  renderAdminDriverEarnings();
+  renderOptions();
+}
+
 
 async function fnErrorMessage(error,fallback){
   try{
@@ -7765,6 +8221,24 @@ function renderOptions(){
     panel("load","Yükleme yerleri","Örn. KAPTAN D.Ç")+
     panel("amount","Sefer tutarları (TL)","Örn. 300","Sırayla <b>Kısa</b> (kırmızı), <b>Orta</b> (sarı) ve <b>Uzun</b> (yeşil) olarak renklenir. Raporlarda da aynı renkler kullanılır.")+
     `<section class="admin-card">
+        <div class="panel-head"><h2>Yakıt oranı kazancı</h2><span>Şoför kazancı</span></div>
+        <p class="page-subtitle">Yakıt kayıtlarındaki mazot litresi × bu oran şeklinde hesaplanır. Sefer ve KM kazancından ayrı gösterilir.</p>
+        <div class="opt-add">
+          <input type="number" id="fuelRateInput" inputmode="decimal" min="0" step="0.01" value="${fuelRate}">
+          <span style="align-self:center;color:var(--muted);font-size:13px">TL / litre</span>
+          <button type="button" class="btn-orange btn-sm" onclick="saveFuelRate()">Kaydet</button>
+        </div>
+      </section>`+
+    `<section class="admin-card">
+        <div class="panel-head"><h2>Yakıt / KM kazanç oranı</h2><span>Şoför kazancı</span></div>
+        <p class="page-subtitle">Yakıt kayıtlarındaki KM farkından hesaplanan kazanç. Sefer kazancından ayrı gösterilir.</p>
+        <div class="opt-add">
+          <input type="number" id="kmRateInput" inputmode="decimal" min="0.01" step="0.01" value="${kmRate}">
+          <span style="align-self:center;color:var(--muted);font-size:13px">TL / km</span>
+          <button type="button" class="btn-orange btn-sm" onclick="saveKmRate()">Kaydet</button>
+        </div>
+      </section>`+
+    `<section class="admin-card">
         <div class="panel-head"><h2>Branda ücreti</h2></div>
         <p class="page-subtitle">Şoför branda çektiğini işaretlerse sefer tutarına bu ücret eklenir.</p>
         <div class="opt-add">
@@ -7783,10 +8257,18 @@ function renderOptions(){
 const DRIVER_VIEWS={
   fuel:"Yakıt kayıtları",
   trip:"Sefer tablosu",
+  earnings:"Kazançlar",
   leave:"İzin",
   ann:"Duyurular",
   docs:"Evraklarım"
 };
+
+function openDriverVehicleMenu(){
+  showDriverTab("fuel");
+  selectRecordType("vehicle");
+  const el=document.getElementById("addRecordTitle");
+  if(el && el.scrollIntoView)el.scrollIntoView({behavior:"smooth",block:"start"});
+}
 
 let driverView="fuel";
 
@@ -7804,7 +8286,7 @@ function showDriverTab(tab){
   if(!DRIVER_VIEWS[tab])tab="fuel";
   driverView=tab;
 
-  const ids={fuel:"driverFuelView",trip:"driverTripView",leave:"driverLeaveView",ann:"driverAnnView",docs:"driverDocsView"};
+  const ids={fuel:"driverFuelView",trip:"driverTripView",earnings:"driverEarningsView",leave:"driverLeaveView",ann:"driverAnnView",docs:"driverDocsView"};
 
   Object.keys(ids).forEach(k=>{
     const el=document.getElementById(ids[k]);
@@ -7823,6 +8305,10 @@ function showDriverTab(tab){
 
   toggleDriverSidebar(false);
   window.scrollTo(0,0);
+
+  if(tab==="earnings"){
+    renderDriverEarnings();
+  }
 
   if(tab==="leave"){
     initializeLeaveDates();
@@ -8796,7 +9282,7 @@ function vehicleReportData(){
       fuel:fuel,
       adblue:adblue,
       cons:cons,
-      earn:(diff!==null && diff>0) ? diff*KM_RATE : null
+      earn:(diff!==null && diff>0) ? diff*kmRate : null
     };
   });
 
@@ -8980,7 +9466,7 @@ async function buildVehiclesExcel(ctx){
   const fr=tr+2;
   ws.mergeCells(fr,1,fr,n);
   const note=ws.getCell(fr,1);
-  note.value=`Not: Ay sonu km girilmemişse son km kaydı esas alınır. Kazanç = km farkı × ${KM_RATE} TL.`;
+  note.value=`Not: Ay sonu km girilmemişse son km kaydı esas alınır. Kazanç = km farkı × ${kmRate} TL.`;
   note.font={name:"Calibri",size:10,italic:true,color:{argb:"FF6B7280"}};
   note.alignment={vertical:"middle",horizontal:"left",indent:1};
 
@@ -9190,7 +9676,7 @@ async function buildVehiclesPdf(ctx){
   doc.setFont("Carlito","normal");
   doc.setFontSize(8.5);
   doc.setTextColor(110,118,128);
-  doc.text(`Not: Ay sonu km girilmemişse son km kaydı esas alınır. Kazanç = km farkı × ${KM_RATE} TL.`,14,noteY);
+  doc.text(`Not: Ay sonu km girilmemişse son km kaydı esas alınır. Kazanç = km farkı × ${kmRate} TL.`,14,noteY);
 
   const stamp=new Date().toLocaleString("tr-TR",{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
   const pages=doc.getNumberOfPages();
@@ -9434,8 +9920,73 @@ function renderDriverAltHistory(){
           <div class="alt-cell"><span>Mesafe</span><b>${st.distance!==null ? formatNumber(st.distance,0)+" km" : "—"}</b></div>
           <div class="alt-cell"><span>Mazot / Sefer</span><b>${st.fuel>0 ? formatNumber(st.fuel)+" lt" : "—"} · ${st.trips}</b></div>
         </div>
+        <div class="alt-actions">
+          <button type="button" onclick="editAltSession('${v.id}',false)">Düzelt</button>
+          <button type="button" class="danger" onclick="deleteAltSession('${v.id}',false)">Sil</button>
+        </div>
       </div>`;
   }).join("");
+}
+
+async function editAltSession(id,isAdmin){
+  const v=vehicleChanges.find(x=>x.id===id);
+  if(!v)return;
+  if(!isAdmin && v.driver_id!==currentUser.id)return;
+
+  const plate=formatPlate(prompt("Yedek araç plakası:",v.plate) || v.plate);
+  const startKm=Number(prompt("Başlangıç KM:",v.start_km) || v.start_km || 0);
+  const reason=(prompt("Neden:",v.reason || "") || "").trim();
+  let endKm=v.end_km;
+  if(v.end_at)endKm=Number(prompt("Bitiş KM:",v.end_km || "") || v.end_km || 0);
+
+  if(!plate || !(startKm>0)){
+    alert("Plaka ve geçerli başlangıç KM gerekli.");
+    return;
+  }
+
+  const payload={plate,start_km:startKm,reason:reason || null};
+  if(v.end_at && endKm>0)payload.end_km=endKm;
+
+  let q=supabaseClient.from("vehicle_changes").update(payload).eq("id",id);
+  if(!isAdmin)q=q.eq("driver_id",currentUser.id);
+  const {error}=await q;
+  if(error){
+    console.error(error);
+    alert("Yedek araç kaydı güncellenemedi: "+error.message);
+    return;
+  }
+  toast("Yedek araç kaydı güncellendi.");
+  if(isAdmin)await loadAdminData(); else { await loadDriverData(); }
+}
+
+async function deleteAltSession(id,isAdmin){
+  const v=vehicleChanges.find(x=>x.id===id);
+  if(!v)return;
+  if(!isAdmin && v.driver_id!==currentUser.id)return;
+  const ok=await askConfirm("Bu yedek araç kullanımı ve buna bağlı sefer/yakıt kayıtları silinsin mi?","Sil");
+  if(!ok)return;
+
+  const linkedRecords=records.filter(r=>r.vehicle_change_id===id);
+  const paths=linkedRecords.map(r=>r.receipt_path).filter(Boolean);
+
+  let rq=supabaseClient.from("fuel_records").delete().eq("vehicle_change_id",id);
+  if(!isAdmin)rq=rq.eq("driver_id",currentUser.id);
+  const {error:re}=await rq;
+  if(re){alert("Bağlı yakıt kayıtları silinemedi: "+re.message);return;}
+
+  let tq=supabaseClient.from("trips").delete().eq("vehicle_change_id",id);
+  if(!isAdmin)tq=tq.eq("driver_id",currentUser.id);
+  const {error:te}=await tq;
+  if(te){alert("Bağlı seferler silinemedi: "+te.message);return;}
+
+  let vq=supabaseClient.from("vehicle_changes").delete().eq("id",id);
+  if(!isAdmin)vq=vq.eq("driver_id",currentUser.id);
+  const {error:ve}=await vq;
+  if(ve){alert("Yedek araç kaydı silinemedi: "+ve.message);return;}
+
+  if(paths.length){try{await supabaseClient.storage.from("fuel-receipts").remove(paths);}catch(e){console.warn(e);}}
+  toast("Yedek araç kaydı silindi.");
+  if(isAdmin)await loadAdminData(); else await loadDriverData();
 }
 
 function renderAltUi(){
@@ -9682,6 +10233,10 @@ function renderAdminAlt(){
           <div class="alt-cell"><span>${on ? "Son km" : "Bitiş km"}</span><b>${st.endKm>0 ? formatNumber(st.endKm,0) : "—"}</b></div>
           <div class="alt-cell"><span>Mesafe</span><b>${st.distance!==null ? formatNumber(st.distance,0)+" km" : "—"}</b></div>
           <div class="alt-cell"><span>Mazot / AdBlue</span><b>${st.fuel>0 ? formatNumber(st.fuel)+" lt" : "—"} · ${st.adblue>0 ? formatNumber(st.adblue)+" lt" : "—"}</b></div>
+        </div>
+        <div class="alt-actions">
+          <button type="button" onclick="editAltSession('${v.id}',true)">Düzelt</button>
+          <button type="button" class="danger" onclick="deleteAltSession('${v.id}',true)">Sil</button>
         </div>
       </div>`;
   }).join("");
