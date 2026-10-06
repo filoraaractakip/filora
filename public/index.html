@@ -828,10 +828,18 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 .8-3 2s1.1 1.9 3 2.2 3 .8 3 2.2-1.3 2.2-3 2.2c-1.3 0-2.4-.4-3.1-1.2"/></svg>
           Kazançlar
         </button>
+        <button type="button" class="nav-item" data-dview="deductions" onclick="showDriverTab('deductions')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M15.5 16.5l2 2 3-3"/></svg>
+          Trafik Ceza ve Kesinti
+        </button>
         <button type="button" class="nav-item" data-dview="leave" onclick="showDriverTab('leave')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
           İzin
           <span class="nav-badge hidden" id="driverLeaveBadge"></span>
+        </button>
+        <button type="button" class="nav-item" data-dview="vehicle" onclick="showDriverTab('vehicle')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14l-1.5-6h-11z"/><path d="M7 11l1.5-4h7L17 11M7 17v2M17 17v2"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></svg>
+          Yedek araç
         </button>
         <button type="button" class="nav-item" data-dview="ann" onclick="showDriverTab('ann')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
@@ -1165,33 +1173,18 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
         <div class="field-row">
           <div class="field">
-            <label for="leaveStart">İzin başlangıcı</label>
-            <input type="date" id="leaveStart" onchange="onLeaveStartChange()">
+            <label for="leaveStart">İzin başlangıç tarihi</label>
+            <input type="date" id="leaveStart" required onchange="onLeaveStartChange()">
           </div>
           <div class="field">
-            <label for="leaveEnd">İzin bitişi</label>
-            <input type="date" id="leaveEnd">
+            <label for="leaveEnd">İzin bitiş tarihi</label>
+            <input type="date" id="leaveEnd" required>
           </div>
         </div>
 
         <div class="field">
-          <label for="leavePlace">İzni nerede geçireceksiniz?</label>
-          <input type="text" id="leavePlace" maxlength="120" placeholder="Örn. Sivas / Merkez">
-        </div>
-
-        <div class="field">
-          <label for="leaveContactName">Yakınınızın adı soyadı</label>
-          <input type="text" id="leaveContactName" maxlength="80" placeholder="İsteğe bağlı">
-        </div>
-
-        <div class="field">
-          <label for="leaveContactPhone">Yakınınızın telefon numarası</label>
-          <input type="tel" id="leaveContactPhone" inputmode="tel" maxlength="20" placeholder="05xx xxx xx xx">
-        </div>
-
-        <div class="field">
-          <label for="leaveNote">Not (isteğe bağlı)</label>
-          <textarea id="leaveNote" rows="3" maxlength="300" placeholder="Yöneticiye iletmek istediğiniz not"></textarea>
+          <label for="leaveNote">Not <span style="color:var(--orange)">*</span></label>
+          <textarea id="leaveNote" rows="4" maxlength="300" required placeholder="Yöneticiye iletmek istediğiniz not"></textarea>
         </div>
 
         <div id="leaveStatus" class="status" role="status" aria-live="polite"></div>
@@ -1206,6 +1199,60 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
         <div id="driverLeaves"></div>
       </section>
 
+    </div>
+
+    <div id="driverVehicleView" hidden>
+      <section class="panel" aria-labelledby="driverVehicleTitle">
+        <div class="panel-head">
+          <h2 id="driverVehicleTitle">Yedek araç</h2>
+        </div>
+        <p class="page-subtitle" style="margin:-6px 0 16px">Kullandığınız yedek aracın bilgilerini girin. KM ve akaryakıt kayıtları kazançlarınıza yansır.</p>
+
+        <div class="field">
+          <label for="driverAltDate">Yedek araç kullanım tarihi</label>
+          <input type="date" id="driverAltDate" required>
+        </div>
+
+        <div class="field">
+          <label for="driverAltPlate">Araç plakası</label>
+          <input type="text" id="driverAltPlate" maxlength="14" autocapitalize="characters" autocomplete="off" placeholder="Örn. 34 ABC 123">
+        </div>
+
+        <div class="field">
+          <label for="driverAltKm">Araçla yapılan KM</label>
+          <input type="number" id="driverAltKm" step="1" min="0" inputmode="numeric" placeholder="Örn. 250">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="driverAltFuel">Akaryakıt (litre)</label>
+            <input type="number" id="driverAltFuel" step="0.01" min="0" inputmode="decimal" placeholder="Örn. 150">
+          </div>
+          <div class="field">
+            <label for="driverAltAdblue">AdBlue (litre)</label>
+            <input type="number" id="driverAltAdblue" step="0.01" min="0" inputmode="decimal" placeholder="Örn. 30">
+          </div>
+        </div>
+
+        <div id="driverVehicleStatus" class="status" role="status" aria-live="polite"></div>
+        <button type="button" class="btn-orange" id="saveDriverVehicleButton" onclick="saveDriverVehicleRecord()">Kaydı kaydet</button>
+      </section>
+
+      <section class="panel" aria-labelledby="driverVehicleHistoryTitle">
+        <div class="panel-head"><h2 id="driverVehicleHistoryTitle">Yedek araç kullanım kayıtlarım</h2></div>
+        <div id="driverVehicleHistory"></div>
+      </section>
+    </div>
+
+    <div id="driverDeductionsView" hidden>
+      <section class="panel" aria-labelledby="driverDeductionsTitle">
+        <div class="panel-head">
+          <h2 id="driverDeductionsTitle">Trafik Ceza ve Kesinti</h2>
+        </div>
+        <p class="page-subtitle" style="margin:-6px 0 16px">Yönetici tarafından adınıza girilen trafik cezaları ve diğer kesintiler burada yalnızca bilgilendirme amacıyla gösterilir. Bu bölümden veri girişi yapamazsınız.</p>
+        <div id="driverDeductionsSummary" class="admin-grid" style="margin-bottom:14px"></div>
+        <div id="driverDeductionsList"></div>
+      </section>
     </div>
 
     <!-- DUYURULAR -->
@@ -1331,9 +1378,18 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c-.7-.8-1.7-1.2-3-1.2-1.7 0-3 .8-3 2s1.1 1.9 3 2.2 3 .8 3 2.2-1.3 2.2-3 2.2c-1.3 0-2.4-.4-3.1-1.2"/></svg>
           Şoför kazançları
         </button>
+        <button type="button" class="nav-item" data-view="cezalar" onclick="showAdminView('cezalar')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M15.5 16.5l2 2 3-3"/></svg>
+          Trafik Ceza ve Kesinti
+        </button>
         <button type="button" class="nav-item" data-view="araclar" onclick="showAdminView('araclar')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg>
           Araçlar ve km
+        </button>
+        <button type="button" class="nav-item" data-view="yedek" onclick="showAdminView('yedek')">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M7 4h10M17 4l-2-2M17 4l-2 2"/></svg>
+          Yedek araçlar
+          <span class="nav-badge hidden" id="navBadgeAlt"></span>
         </button>
         <button type="button" class="nav-item" data-view="secenekler" onclick="showAdminView('secenekler')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
@@ -1589,6 +1645,38 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
         </section>
 
 
+        <!-- TRAFİK CEZA VE KESİNTİ -->
+        <section class="view hidden" id="view-cezalar">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Trafik Ceza ve Kesinti <small class="muted-count" id="adminDeductionCount"></small></h2>
+              <button type="button" class="btn-orange btn-sm" onclick="openDeductionModal()">+ Ceza / kesinti ekle</button>
+            </div>
+            <p class="page-subtitle" style="margin:-6px 0 16px">Şoförlere ait trafik cezalarını ve diğer kesintileri buradan kaydedin. Şoförler bu kayıtları yalnızca görüntüleyebilir.</p>
+            <div class="filters" style="grid-template-columns:1.3fr 1fr 1fr 1fr 1.3fr auto">
+              <input type="text" id="adminDeductionSearch" placeholder="Şoför, bölge veya açıklama ara" oninput="renderAdminDeductions()">
+              <select id="adminDeductionDriver" onchange="renderAdminDeductions()"><option value="">Tüm şoförler</option></select>
+              <select id="adminDeductionType" onchange="renderAdminDeductions()">
+                <option value="">Tüm türler</option>
+                <option value="Trafik cezası">Trafik cezası</option>
+                <option value="Kesinti">Kesinti</option>
+                <option value="Diğer">Diğer</option>
+              </select>
+              <input type="date" id="adminDeductionStart" onchange="renderAdminDeductions()">
+              <input type="date" id="adminDeductionEnd" onchange="renderAdminDeductions()">
+              <button type="button" class="btn-secondary" onclick="clearAdminDeductionFilters()">Temizle</button>
+            </div>
+            <div id="adminDeductionSummary" class="admin-grid" style="margin-bottom:14px"></div>
+            <div class="table-wrap">
+              <table style="min-width:1050px">
+                <thead><tr><th>Tarih</th><th>Şoför</th><th>Tür</th><th>Tutar</th><th>Bölge</th><th>Açıklama</th><th>Belge</th><th>İşlem</th></tr></thead>
+                <tbody id="adminDeductionTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+
         <!-- ARAÇLAR VE KM -->
         <section class="view hidden" id="view-araclar">
           <div class="report-actions" style="margin-bottom:14px">
@@ -1618,6 +1706,46 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
               <div id="adminVehicles"></div>
             </section>
           </div>
+        </section>
+
+
+        <!-- YEDEK ARAÇ KULLANIMLARI -->
+        <section class="view hidden" id="view-yedek">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Yedek araç kullanım kayıtları <small class="muted-count" id="adminAltCount"></small></h2>
+              <button type="button" class="btn-secondary" onclick="renderAdminYedek()">Yenile</button>
+            </div>
+            <p class="page-subtitle" style="margin:-6px 0 16px">Şoförlerin kullandığı yedek araçları; tarih, şoför, plaka, KM, akaryakıt ve AdBlue bilgileriyle takip edin.</p>
+            <div class="filters" style="grid-template-columns:1.4fr 1fr 1fr 1.4fr auto">
+              <input type="text" id="adminAltSearch" placeholder="Şoför veya plaka ara" oninput="renderAdminYedek()">
+              <select id="adminAltDriver" onchange="renderAdminYedek()">
+                <option value="">Tüm şoförler</option>
+              </select>
+              <input type="date" id="adminAltStart" onchange="renderAdminYedek()">
+              <input type="date" id="adminAltEnd" onchange="renderAdminYedek()">
+              <button type="button" class="btn-secondary" onclick="clearAdminYedekFilters()">Temizle</button>
+            </div>
+            <div id="adminAltSummary" class="admin-grid" style="margin-bottom:14px"></div>
+            <div class="table-wrap">
+              <table style="min-width:980px">
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>Şoför</th>
+                    <th>Kendi aracı</th>
+                    <th>Yedek araç</th>
+                    <th>KM</th>
+                    <th>Akaryakıt</th>
+                    <th>AdBlue</th>
+                    <th>Durum</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody id="adminAltTable"></tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
 
@@ -1864,6 +1992,38 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
 
 <!-- ONAY -->
+<div id="deductionModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deductionModalTitle">
+  <div class="modal-card">
+    <h2 id="deductionModalTitle">Ceza / kesinti ekle</h2>
+    <input type="hidden" id="deductionEditId">
+    <div class="field">
+      <label for="deductionDriver">Şoför</label>
+      <select id="deductionDriver"></select>
+    </div>
+    <div class="field">
+      <label for="deductionType">Tür</label>
+      <select id="deductionType">
+        <option value="Trafik cezası">Trafik cezası</option>
+        <option value="Kesinti">Kesinti</option>
+        <option value="Diğer">Diğer</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label for="deductionAmount">Tutar (TL)</label><input type="number" id="deductionAmount" min="0" step="0.01" inputmode="decimal"></div>
+      <div class="field"><label for="deductionDate">Tarih</label><input type="date" id="deductionDate"></div>
+    </div>
+    <div class="field"><label for="deductionRegion">Bölge / yer</label><input type="text" id="deductionRegion" maxlength="200" placeholder="Örn. İstanbul / Avcılar" autocomplete="off"></div>
+    <div class="field"><label for="deductionNote">Açıklama</label><textarea id="deductionNote" rows="3" maxlength="1000" placeholder="Ceza veya kesinti hakkında açıklama"></textarea></div>
+    <div class="field"><label for="deductionDocument">Ceza / kesinti evrağı</label><input type="file" id="deductionDocument" accept="image/*,.pdf"></div>
+    <div id="deductionDocumentCurrent" class="page-subtitle"></div>
+    <div id="deductionStatus" class="status" role="status" aria-live="polite"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeDeductionModal()">Vazgeç</button>
+      <button type="button" class="btn-orange" id="saveDeductionButton" onclick="saveDeduction()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirmModal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmText">
   <div class="modal-card">
     <p id="confirmText" class="confirm-text"></p>
@@ -2522,6 +2682,7 @@ async function loadDriverData(){
     loadDriverRecords(),
     loadMonthlyStartsForDriver(),
     loadVehicleChanges(),
+    loadDriverDeductions(),
     loadAppSettings()
   ]);
 
@@ -2530,6 +2691,7 @@ async function loadDriverData(){
   renderDriverMonthKm();
   await loadDriverTripData();
   renderDriverEarnings();
+  renderDriverDeductions();
   renderAltUi();
 }
 
@@ -3787,6 +3949,7 @@ async function loadAdminData(){
       loadAnnouncements(),
       loadVehicleChanges(),
       loadAllDocs(),
+      loadDeductions(),
       loadAppSettings()
     ]);
 
@@ -3803,6 +3966,8 @@ async function loadAdminData(){
     renderAdminLeaves();
     renderAdminAnnouncements();
     renderAdminAlt();
+    renderAdminYedek();
+    renderAdminDeductions();
     renderAdminDocs();
 
 
@@ -6569,6 +6734,7 @@ const ADMIN_VIEWS={
   kayitlar:"Yakıt kayıtları",
   seferler:"Sefer tablosu",
   kazanc:"Şoför kazançları",
+  cezalar:"Trafik Ceza ve Kesinti",
   soforler:"Şoförler",
   araclar:"Araçlar ve km",
   secenekler:"Sefer seçenekleri",
@@ -8515,7 +8681,9 @@ const DRIVER_VIEWS={
   fuel:"Yakıt kayıtları",
   trip:"Sefer tablosu",
   earnings:"Kazançlar",
+  deductions:"Trafik Ceza ve Kesinti",
   leave:"İzin",
+  vehicle:"Yedek araç",
   ann:"Duyurular",
   docs:"Evraklarım"
 };
@@ -8540,10 +8708,13 @@ function toggleDriverSidebar(force){
 
 function showDriverTab(tab){
 
+  const vehicleDate=document.getElementById("driverAltDate");
+  if(vehicleDate && !vehicleDate.value)vehicleDate.value=getIstanbulDateString();
+
   if(!DRIVER_VIEWS[tab])tab="fuel";
   driverView=tab;
 
-  const ids={fuel:"driverFuelView",trip:"driverTripView",earnings:"driverEarningsView",leave:"driverLeaveView",ann:"driverAnnView",docs:"driverDocsView"};
+  const ids={fuel:"driverFuelView",trip:"driverTripView",earnings:"driverEarningsView",deductions:"driverDeductionsView",leave:"driverLeaveView",vehicle:"driverVehicleView",ann:"driverAnnView",docs:"driverDocsView"};
 
   Object.keys(ids).forEach(k=>{
     const el=document.getElementById(ids[k]);
@@ -8587,6 +8758,10 @@ function showDriverTab(tab){
   if(tab==="docs"){
     renderDocForm();
     loadMyDocs().then(renderMyDocs);
+  }
+
+  if(tab==="deductions"){
+    loadDriverDeductions().then(renderDriverDeductions);
   }
 }
 
@@ -8803,9 +8978,7 @@ function renderMyLeaves(){
           ${badge}
         </div>
         <div class="leave-meta">
-          Yer: <b>${escapeHtml(l.place || "—")}</b><br>
-          Yakını: <b>${escapeHtml(l.contact_name || "—")}</b> · ${telLink(l.contact_phone) || "—"}
-          ${l.note ? "<br>Not: "+escapeHtml(l.note) : ""}
+          ${l.note ? "Not: "+escapeHtml(l.note) : "—"}
         </div>
         ${msg}
       </div>`;
@@ -8815,14 +8988,9 @@ function renderMyLeaves(){
 async function saveLeave(){
 
   const btn=document.getElementById("saveLeaveButton");
-
   const start=document.getElementById("leaveStart").value;
   const end=document.getElementById("leaveEnd").value;
-  const place=document.getElementById("leavePlace").value.trim();
-  const cname=document.getElementById("leaveContactName").value.trim();
-  const cphone=document.getElementById("leaveContactPhone").value.trim();
   const note=document.getElementById("leaveNote").value.trim();
-
   const today=getIstanbulDateString();
 
   if(!start || !end){
@@ -8840,13 +9008,9 @@ async function saveLeave(){
     return;
   }
 
-  if(place.length<2){
-    showStatus("leaveStatus","İzni nerede geçireceğinizi yazın.","error");
-    return;
-  }
-
-  if(!phoneOk(cphone)){
-    showStatus("leaveStatus","Yakınınızın geçerli bir telefon numarasını yazın.","error");
+  if(!note){
+    showStatus("leaveStatus","Not alanı zorunludur. Lütfen notunuzu yazın.","error");
+    document.getElementById("leaveNote").focus();
     return;
   }
 
@@ -8859,10 +9023,7 @@ async function saveLeave(){
       driver_id:currentUser.id,
       start_date:start,
       end_date:end,
-      place:place,
-      contact_name:cname || null,
-      contact_phone:cphone,
-      note:note || null,
+      note:note,
       status:"pending"
     });
 
@@ -8878,9 +9039,6 @@ async function saveLeave(){
     return;
   }
 
-  document.getElementById("leavePlace").value="";
-  document.getElementById("leaveContactName").value="";
-  document.getElementById("leaveContactPhone").value="";
   document.getElementById("leaveNote").value="";
 
   showStatus("leaveStatus","Talebiniz yöneticiye iletildi. Onay bekleniyor.","success");
@@ -8888,6 +9046,76 @@ async function saveLeave(){
   await loadMyLeaves();
 }
 
+
+async function saveDriverVehicleRecord(){
+  const btn=document.getElementById("saveDriverVehicleButton");
+  const date=document.getElementById("driverAltDate").value;
+  const plate=formatPlate(document.getElementById("driverAltPlate").value);
+  const km=Number(document.getElementById("driverAltKm").value||0);
+  const fuel=Number(document.getElementById("driverAltFuel").value||0);
+  const adblue=Number(document.getElementById("driverAltAdblue").value||0);
+  if(!vehicleChangesOk){showStatus("driverVehicleStatus","Yedek araç özelliği henüz kurulmamış. Yöneticiye bildirin.","error");return;}
+  if(!date){showStatus("driverVehicleStatus","Yedek araç kullanım tarihini seçin.","error");return;}
+  if(plateKey(plate).length<5){showStatus("driverVehicleStatus","Araç plakasını girin.","error");return;}
+  if(currentProfile&&plateKey(plate)===plateKey(currentProfile.plate)){showStatus("driverVehicleStatus","Kendi aracınızın plakasını değil, yedek aracın plakasını girin.","error");return;}
+  if(!(km>0)){showStatus("driverVehicleStatus","Araçla yapılan KM 0'dan büyük olmalıdır.","error");return;}
+  if(fuel<0||adblue<0){showStatus("driverVehicleStatus","Akaryakıt ve AdBlue miktarları geçersiz.","error");return;}
+  btn.disabled=true; showStatus("driverVehicleStatus","Kaydediliyor...","success");
+  const dayIso=new Date(date+"T12:00:00+03:00").toISOString();
+  try{
+    const {data:session,error:sessionError}=await supabaseClient.from("vehicle_changes").insert({driver_id:currentUser.id,plate,start_km:0,end_km:km,start_at:dayIso,end_at:dayIso,reason:"Şoför paneli Yedek araç kaydı"}).select("id").single();
+    if(sessionError)throw sessionError;
+    const {error:recordError}=await supabaseClient.from("fuel_records").insert({driver_id:currentUser.id,fuel_liters:fuel,adblue_liters:adblue,km:km,fuel_date:date,fuel_time:"12:00",receipt_path:null,alt_plate:plate,vehicle_change_id:session.id});
+    if(recordError){try{await supabaseClient.from("vehicle_changes").delete().eq("id",session.id).eq("driver_id",currentUser.id);}catch(e){console.warn(e);}throw recordError;}
+    ["driverAltPlate","driverAltKm","driverAltFuel","driverAltAdblue"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("driverAltDate").value=getIstanbulDateString();
+    await loadDriverData(); await loadVehicleChanges(); renderDriverEarnings(); renderDriverVehicleHistory();
+    showStatus("driverVehicleStatus","Yedek araç kaydı kaydedildi. KM ve akaryakıt kazançlarınıza yansıtıldı.","success");
+  }catch(error){
+    console.error(error); showStatus("driverVehicleStatus",/vehicle_changes|alt_plate|vehicle_change_id|schema cache|relation/i.test(error.message||"")?"Yedek araç özelliği henüz kurulmamış. Yöneticiye bildirin.":"Kaydedilemedi: "+(error.message||"bilinmeyen hata"),"error");
+  }finally{btn.disabled=false;}
+}
+
+function renderDriverVehicleHistory(){
+  const box=document.getElementById("driverVehicleHistory"); if(!box)return;
+  if(!vehicleChanges.length){box.innerHTML='<div class="empty">Henüz yedek araç kullanım kaydı yok.</div>';return;}
+  box.innerHTML=vehicleChanges.map(v=>{
+    const st=altSessionStats(v), linked=records.filter(r=>r.vehicle_change_id===v.id), r=linked[linked.length-1]||null;
+    const date=r?.fuel_date||(v.start_at?getIstanbulDateString(new Date(v.start_at)):"");
+    return `<div class="alt-row"><div class="alt-head"><strong>${escapeHtml(v.plate)}</strong><span class="lv lv-approved">${escapeHtml(date?date.split("-").reverse().join("."):"Tarih yok")}</span></div><div class="alt-grid"><div class="alt-cell"><span>Kullanım tarihi</span><b>${escapeHtml(date?date.split("-").reverse().join("."):"—")}</b></div><div class="alt-cell"><span>Araçla yapılan KM</span><b>${st.distance!==null?formatNumber(st.distance,0)+" km":"—"}</b></div><div class="alt-cell"><span>Akaryakıt</span><b>${formatNumber(r?Number(r.fuel_liters||0):st.fuel)} lt</b></div><div class="alt-cell"><span>AdBlue</span><b>${formatNumber(r?Number(r.adblue_liters||0):st.adblue)} lt</b></div></div><div class="alt-actions"><button type="button" onclick="editDriverVehicleRecord('${v.id}')">Düzelt</button><button type="button" class="danger" onclick="deleteDriverVehicleRecord('${v.id}')">Sil</button></div></div>`;
+  }).join("");
+}
+
+async function editDriverVehicleRecord(id){
+  const v=vehicleChanges.find(x=>x.id===id); if(!v||v.driver_id!==currentUser.id)return;
+  const linked=records.filter(r=>r.vehicle_change_id===id), r=linked[linked.length-1]||null;
+  const oldDate=r?.fuel_date||(v.start_at?getIstanbulDateString(new Date(v.start_at)):getIstanbulDateString());
+  const date=prompt("Yedek araç kullanım tarihi (YYYY-AA-GG):",oldDate); if(date===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert("Tarih formatı YYYY-AA-GG olmalıdır.");return;}
+  const plate=formatPlate(prompt("Yedek araç plakası:",v.plate)||v.plate);
+  const km=Number(prompt("Araçla yapılan KM:",r?.km??v.end_km??"")||0);
+  const fuel=Number(prompt("Akaryakıt (litre):",r?.fuel_liters??0)||0);
+  const adblue=Number(prompt("AdBlue (litre):",r?.adblue_liters??0)||0);
+  if(plateKey(plate).length<5||!(km>0)||fuel<0||adblue<0){alert("Plaka, 0'dan büyük KM ve geçerli akaryakıt/AdBlue değerleri gerekli.");return;}
+  if(currentProfile&&plateKey(plate)===plateKey(currentProfile.plate)){alert("Kendi aracınızın plakasını yedek araç olarak kullanamazsınız.");return;}
+  const iso=new Date(date+"T12:00:00+03:00").toISOString();
+  const {error:ve}=await supabaseClient.from("vehicle_changes").update({plate,start_at:iso,end_at:iso,start_km:0,end_km:km}).eq("id",id).eq("driver_id",currentUser.id);
+  if(ve){alert("Yedek araç kaydı güncellenemedi: "+ve.message);return;}
+  if(r){const {error:re}=await supabaseClient.from("fuel_records").update({fuel_liters:fuel,adblue_liters:adblue,km:km,fuel_date:date,fuel_time:"12:00",alt_plate:plate}).eq("id",r.id).eq("driver_id",currentUser.id);if(re){alert("Yakıt/KM bilgileri güncellenemedi: "+re.message);return;}}
+  await loadDriverData(); await loadVehicleChanges(); renderDriverEarnings(); renderDriverVehicleHistory(); toast("Yedek araç kaydı güncellendi.");
+}
+
+async function deleteDriverVehicleRecord(id){
+  const v=vehicleChanges.find(x=>x.id===id); if(!v||v.driver_id!==currentUser.id)return;
+  if(!await askConfirm("Bu yedek araç kullanım kaydı ve buna bağlı yakıt/KM kaydı silinsin mi?","Sil"))return;
+  const linked=records.filter(r=>r.vehicle_change_id===id);
+  const {error:re}=await supabaseClient.from("fuel_records").delete().eq("vehicle_change_id",id).eq("driver_id",currentUser.id);
+  if(re){alert("Bağlı yakıt/KM kaydı silinemedi: "+re.message);return;}
+  const {error:ve}=await supabaseClient.from("vehicle_changes").delete().eq("id",id).eq("driver_id",currentUser.id);
+  if(ve){alert("Yedek araç kaydı silinemedi: "+ve.message);return;}
+  const paths=linked.map(r=>r.receipt_path).filter(Boolean); if(paths.length){try{await supabaseClient.storage.from("fuel-receipts").remove(paths);}catch(e){console.warn(e);}}
+  await loadDriverData(); await loadVehicleChanges(); renderDriverEarnings(); renderDriverVehicleHistory(); toast("Yedek araç kaydı silindi.");
+}
 
 /* =========================================================
    DUYURULAR (ortak yükleme)
@@ -10037,6 +10265,7 @@ async function loadVehicleChanges(){
 
     vehicleChangesOk=true;
     vehicleChanges=data || [];
+    renderDriverVehicleHistory();
 
   }catch(e){
     vehicleChangesOk=false;
@@ -10059,7 +10288,7 @@ function altSessionStats(v){
   return {
     startKm:startKm,
     endKm:lastKm,
-    distance:(startKm>0 && lastKm>=startKm) ? lastKm-startKm : null,
+    distance:(startKm>0 && lastKm>=startKm) ? lastKm-startKm : (startKm===0 && lastKm>0 ? lastKm : null),
     fuel:recs.reduce((s,r)=>s+Number(r.fuel_liters || 0),0),
     adblue:recs.reduce((s,r)=>s+Number(r.adblue_liters || 0),0),
     trips:trips.filter(t=>t.vehicle_change_id===v.id).length
@@ -10440,6 +10669,93 @@ async function saveVehicleChange(){
 
 
 /* ---------- Yönetici: yedek araçlar ---------- */
+
+function renderAdminYedek(){
+  const table=document.getElementById("adminAltTable");
+  const summary=document.getElementById("adminAltSummary");
+  const count=document.getElementById("adminAltCount");
+  const driverSel=document.getElementById("adminAltDriver");
+  if(!table)return;
+
+  if(!vehicleChangesOk){
+    table.innerHTML=`<tr><td colspan="9"><div class="empty">Yedek araç tablosu kurulmamış. Supabase tarafındaki yedek araç tablolarını kontrol edin.</div></td></tr>`;
+    if(summary)summary.innerHTML="";
+    if(count)count.textContent="";
+    return;
+  }
+
+  if(driverSel){
+    const current=driverSel.value;
+    driverSel.innerHTML=`<option value="">Tüm şoförler</option>`+
+      profiles.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name || "Şoför")}</option>`).join("");
+    driverSel.value=current;
+  }
+
+  const search=(document.getElementById("adminAltSearch")?.value || "").trim().toLocaleLowerCase("tr-TR");
+  const driverId=document.getElementById("adminAltDriver")?.value || "";
+  const start=document.getElementById("adminAltStart")?.value || "";
+  const end=document.getElementById("adminAltEnd")?.value || "";
+
+  let list=vehicleChanges.filter(v=>{
+    const p=profiles.find(x=>x.id===v.driver_id) || {};
+    const d=String(v.start_at || "").slice(0,10);
+    const text=`${p.full_name || ""} ${p.plate || ""} ${v.plate || ""}`.toLocaleLowerCase("tr-TR");
+    if(search && !text.includes(search))return false;
+    if(driverId && v.driver_id!==driverId)return false;
+    if(start && d<start)return false;
+    if(end && d>end)return false;
+    return true;
+  }).sort((a,b)=>String(b.start_at || "").localeCompare(String(a.start_at || "")));
+
+  let totalKm=0,totalFuel=0,totalAdblue=0,active=0;
+  list.forEach(v=>{
+    const st=altSessionStats(v);
+    if(st.distance!==null)totalKm+=Number(st.distance || 0);
+    totalFuel+=Number(st.fuel || 0);
+    totalAdblue+=Number(st.adblue || 0);
+    if(!v.end_at)active++;
+  });
+
+  if(count)count.textContent=`${list.length} kayıt${active ? " · "+active+" kullanımda" : ""}`;
+
+  if(summary){
+    summary.innerHTML=`
+      <section class="admin-card"><div class="panel-head"><h2>Kayıt</h2></div><strong style="font-size:22px">${list.length}</strong></section>
+      <section class="admin-card"><div class="panel-head"><h2>Toplam KM</h2></div><strong style="font-size:22px">${formatNumber(totalKm,0)} km</strong></section>
+      <section class="admin-card"><div class="panel-head"><h2>Akaryakıt</h2></div><strong style="font-size:22px">${formatNumber(totalFuel)} LT</strong></section>
+      <section class="admin-card"><div class="panel-head"><h2>AdBlue</h2></div><strong style="font-size:22px">${formatNumber(totalAdblue)} LT</strong></section>`;
+  }
+
+  if(!list.length){
+    table.innerHTML=`<tr><td colspan="9"><div class="empty">Seçilen kriterlere uygun yedek araç kullanımı bulunmuyor.</div></td></tr>`;
+    return;
+  }
+
+  table.innerHTML=list.map(v=>{
+    const p=profiles.find(x=>x.id===v.driver_id) || {};
+    const st=altSessionStats(v);
+    const on=!v.end_at;
+    const date=String(v.start_at || "").slice(0,10);
+    const time=String(v.start_at || "").slice(11,16);
+    return `<tr>
+      <td><strong>${escapeHtml(date ? date.split("-").reverse().join(".") : "—")}</strong><br><small>${escapeHtml(time)}</small></td>
+      <td><strong>${escapeHtml(p.full_name || "—")}</strong></td>
+      <td>${escapeHtml(p.plate || "—")}</td>
+      <td><strong>${escapeHtml(v.plate || "—")}</strong></td>
+      <td>${st.distance!==null ? formatNumber(st.distance,0)+" km" : (st.endKm>0 ? formatNumber(st.endKm,0)+" km" : "—")}</td>
+      <td>${st.fuel>0 ? formatNumber(st.fuel)+" LT" : "—"}</td>
+      <td>${st.adblue>0 ? formatNumber(st.adblue)+" LT" : "—"}</td>
+      <td>${on ? '<span class="lv lv-pending">Kullanımda</span>' : '<span class="lv lv-approved">Tamamlandı</span>'}</td>
+      <td><div class="actions"><button type="button" onclick="editAltSession('${v.id}',true)">Düzelt</button><button type="button" class="danger" onclick="deleteAltSession('${v.id}',true)">Sil</button></div></td>
+    </tr>`;
+  }).join("");
+}
+
+function clearAdminYedekFilters(){
+  ["adminAltSearch","adminAltStart","adminAltEnd"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const d=document.getElementById("adminAltDriver");if(d)d.value="";
+  renderAdminYedek();
+}
 
 function renderAdminAlt(){
 
@@ -10994,6 +11310,217 @@ function renderAdminDocs(){
         ${docs.length ? docs.map(d=>docRowHtml(d,true)).join("") : `<div class="empty">Evrak yüklenmemiş.</div>`}
       </details>`;
   }).join("");
+}
+
+
+
+/* =========================================================
+   TRAFİK CEZA VE KESİNTİLER
+========================================================= */
+
+let deductions=[];
+let deductionsOk=true;
+
+async function loadDeductions(){
+  try{
+    const {data,error}=await supabaseClient
+      .from("driver_deductions")
+      .select("*")
+      .order("deduction_date",{ascending:false})
+      .order("created_at",{ascending:false});
+    if(error)throw error;
+    deductions=data || [];
+    deductionsOk=true;
+  }catch(e){
+    console.error("Ceza/kesinti:",e);
+    deductions=[];
+    deductionsOk=false;
+  }
+}
+
+async function loadDriverDeductions(){
+  try{
+    const {data,error}=await supabaseClient
+      .from("driver_deductions")
+      .select("*")
+      .eq("driver_id",currentUser.id)
+      .order("deduction_date",{ascending:false})
+      .order("created_at",{ascending:false});
+    if(error)throw error;
+    deductions=data || [];
+    deductionsOk=true;
+  }catch(e){
+    console.error("Şoför ceza/kesinti:",e);
+    deductions=[];
+    deductionsOk=false;
+  }
+}
+
+function deductionMoney(v){
+  return formatNumber(Number(v||0),2)+" TL";
+}
+
+function deductionDateText(v){
+  const d=String(v||"").slice(0,10);
+  return d ? d.split("-").reverse().join(".") : "—";
+}
+
+function deductionTypeClass(type){
+  return type==="Trafik cezası" ? "lv lv-pending" : "tag";
+}
+
+function renderDriverDeductions(){
+  const box=document.getElementById("driverDeductionsList");
+  const summary=document.getElementById("driverDeductionsSummary");
+  if(!box)return;
+  if(!deductionsOk){
+    box.innerHTML='<div class="empty">Trafik ceza ve kesinti kayıtları henüz kurulmamış.</div>';
+    if(summary)summary.innerHTML="";
+    return;
+  }
+  const total=deductions.reduce((s,d)=>s+Number(d.amount||0),0);
+  const fines=deductions.filter(d=>d.type==="Trafik cezası").reduce((s,d)=>s+Number(d.amount||0),0);
+  if(summary){
+    summary.innerHTML=`
+      <section class="admin-card"><div class="panel-head"><h2>Kayıt</h2></div><strong style="font-size:22px">${deductions.length}</strong><div class="page-subtitle">Toplam kayıt</div></section>
+      <section class="admin-card"><div class="panel-head"><h2>Trafik cezaları</h2></div><strong style="font-size:22px">${deductionMoney(fines)}</strong></section>
+      <section class="admin-card"><div class="panel-head"><h2>Toplam ceza / kesinti</h2></div><strong style="font-size:22px">${deductionMoney(total)}</strong><div class="page-subtitle">Bilgilendirme amaçlı</div></section>`;
+  }
+  if(!deductions.length){box.innerHTML='<div class="empty">Adınıza kayıtlı trafik cezası veya kesinti bulunmuyor.</div>';return;}
+  box.innerHTML=deductions.map(d=>`
+    <div class="alt-row">
+      <div class="alt-head"><strong>${escapeHtml(d.type||"Kesinti")}</strong><span class="${deductionTypeClass(d.type)}">${escapeHtml(deductionDateText(d.deduction_date))}</span></div>
+      <div class="alt-grid">
+        <div class="alt-cell"><span>Tutar</span><b>${deductionMoney(d.amount)}</b></div>
+        <div class="alt-cell"><span>Bölge / yer</span><b>${escapeHtml(d.region||"—")}</b></div>
+        <div class="alt-cell"><span>Açıklama</span><b>${escapeHtml(d.note||"—")}</b></div>
+        <div class="alt-cell"><span>Evrak</span><b>${d.document_path ? `<button type="button" onclick="viewDeductionDocument('${d.id}')">Görüntüle</button>` : "Yok"}</b></div>
+      </div>
+    </div>`).join("");
+}
+
+function populateDeductionDriverSelect(selected){
+  const el=document.getElementById("deductionDriver");
+  if(!el)return;
+  el.innerHTML=profiles.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name||"Şoför")} — ${escapeHtml(p.plate||"Plaka yok")}</option>`).join("");
+  if(selected)el.value=selected;
+}
+
+function openDeductionModal(id=""){
+  if(!currentProfile || currentProfile.role!=="admin")return;
+  const modal=document.getElementById("deductionModal");
+  const edit=document.getElementById("deductionEditId");
+  const row=id ? deductions.find(d=>d.id===id) : null;
+  if(!modal)return;
+  populateDeductionDriverSelect(row?.driver_id || profiles[0]?.id || "");
+  edit.value=row?.id || "";
+  document.getElementById("deductionModalTitle").textContent=row ? "Ceza / kesintiyi düzenle" : "Ceza / kesinti ekle";
+  document.getElementById("deductionType").value=row?.type || "Trafik cezası";
+  document.getElementById("deductionAmount").value=row?.amount ?? "";
+  document.getElementById("deductionDate").value=row?.deduction_date || getIstanbulDateString();
+  document.getElementById("deductionRegion").value=row?.region || "";
+  document.getElementById("deductionNote").value=row?.note || "";
+  document.getElementById("deductionDocument").value="";
+  document.getElementById("deductionDocumentCurrent").innerHTML=row?.document_path ? `<button type="button" class="btn-secondary" onclick="viewDeductionDocument('${row.id}')">Mevcut evrağı görüntüle</button>` : "";
+  showStatus("deductionStatus","","");
+  modal.classList.add("show");
+}
+
+function closeDeductionModal(){
+  const modal=document.getElementById("deductionModal");
+  if(modal)modal.classList.remove("show");
+}
+
+async function uploadDeductionDocument(driverId,file){
+  if(!file)return null;
+  const ext=file.name.includes(".") ? file.name.split(".").pop().toLowerCase() : "bin";
+  const safeExt=/^[a-z0-9]+$/.test(ext) ? ext : "bin";
+  const path=`${driverId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${safeExt}`;
+  const {error}=await supabaseClient.storage.from("driver-deductions").upload(path,file,{upsert:false,contentType:file.type||undefined});
+  if(error)throw error;
+  return path;
+}
+
+async function saveDeduction(){
+  const btn=document.getElementById("saveDeductionButton");
+  const id=document.getElementById("deductionEditId").value;
+  const driverId=document.getElementById("deductionDriver").value;
+  const type=document.getElementById("deductionType").value;
+  const amount=Number(document.getElementById("deductionAmount").value||0);
+  const date=document.getElementById("deductionDate").value;
+  const region=document.getElementById("deductionRegion").value.trim();
+  const note=document.getElementById("deductionNote").value.trim();
+  const file=document.getElementById("deductionDocument").files?.[0] || null;
+  if(!driverId){showStatus("deductionStatus","Şoför seçin.","error");return;}
+  if(!(amount>=0)){showStatus("deductionStatus","Geçerli bir tutar girin.","error");return;}
+  if(!date){showStatus("deductionStatus","Tarih seçin.","error");return;}
+  if(!region){showStatus("deductionStatus","Bölge / yer bilgisini girin.","error");return;}
+  if(file && file.size>10*1024*1024){showStatus("deductionStatus","Evrak 10 MB'dan büyük olamaz.","error");return;}
+  btn.disabled=true;showStatus("deductionStatus","Kaydediliyor...","success");
+  let newPath=null;
+  try{
+    const old= id ? deductions.find(d=>d.id===id) : null;
+    if(file)newPath=await uploadDeductionDocument(driverId,file);
+    const payload={driver_id:driverId,type,amount,deduction_date:date,region,note:note||null};
+    if(newPath)payload.document_path=newPath;
+    let q=id ? supabaseClient.from("driver_deductions").update(payload).eq("id",id) : supabaseClient.from("driver_deductions").insert(payload);
+    const {error}=await q;
+    if(error)throw error;
+    if(newPath && old?.document_path){await supabaseClient.storage.from("driver-deductions").remove([old.document_path]);}
+    closeDeductionModal();
+    await loadAdminData();
+    toast(id ? "Ceza / kesinti güncellendi." : "Ceza / kesinti kaydedildi.");
+  }catch(e){
+    if(newPath){try{await supabaseClient.storage.from("driver-deductions").remove([newPath]);}catch(_){} }
+    console.error(e);showStatus("deductionStatus",/driver_deductions|schema cache|relation/i.test(e.message||"") ? "Ceza/kesinti özelliği henüz kurulmamış. SQL dosyasını çalıştırın." : "Kaydedilemedi: "+(e.message||"bilinmeyen hata"),"error");
+  }finally{btn.disabled=false;}
+}
+
+async function deleteDeduction(id){
+  const row=deductions.find(d=>d.id===id);if(!row)return;
+  const ok=await askConfirm("Bu ceza / kesinti kaydı silinsin mi?","Sil");if(!ok)return;
+  const {error}=await supabaseClient.from("driver_deductions").delete().eq("id",id);
+  if(error){alert("Kayıt silinemedi: "+error.message);return;}
+  if(row.document_path){try{await supabaseClient.storage.from("driver-deductions").remove([row.document_path]);}catch(e){} }
+  await loadAdminData();toast("Ceza / kesinti silindi.");
+}
+
+async function viewDeductionDocument(id){
+  const row=deductions.find(d=>d.id===id);if(!row?.document_path)return;
+  try{
+    const {data,error}=await supabaseClient.storage.from("driver-deductions").createSignedUrl(row.document_path,300);
+    if(error)throw error;
+    if(data?.signedUrl)window.open(data.signedUrl,"_blank");
+  }catch(e){console.error(e);alert("Evrak görüntülenemedi: "+(e.message||"bilinmeyen hata"));}
+}
+
+function renderAdminDeductions(){
+  const table=document.getElementById("adminDeductionTable");if(!table)return;
+  const summary=document.getElementById("adminDeductionSummary");
+  const count=document.getElementById("adminDeductionCount");
+  if(!deductionsOk){table.innerHTML='<tr><td colspan="8"><div class="empty">Ceza/kesinti tablosu kurulmamış. SQL kurulum dosyasını çalıştırın.</div></td></tr>';if(summary)summary.innerHTML="";if(count)count.textContent="";return;}
+  const driverSel=document.getElementById("adminDeductionDriver");
+  if(driverSel){const cur=driverSel.value;driverSel.innerHTML='<option value="">Tüm şoförler</option>'+profiles.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name||"Şoför")}</option>`).join("");driverSel.value=cur;}
+  const search=(document.getElementById("adminDeductionSearch")?.value||"").trim().toLocaleLowerCase("tr-TR");
+  const driver=document.getElementById("adminDeductionDriver")?.value||"";
+  const type=document.getElementById("adminDeductionType")?.value||"";
+  const start=document.getElementById("adminDeductionStart")?.value||"";
+  const end=document.getElementById("adminDeductionEnd")?.value||"";
+  const list=deductions.filter(d=>{
+    const p=profiles.find(x=>x.id===d.driver_id)||{};const text=`${p.full_name||""} ${p.plate||""} ${d.region||""} ${d.note||""} ${d.type||""}`.toLocaleLowerCase("tr-TR");
+    if(search&&!text.includes(search))return false;if(driver&&d.driver_id!==driver)return false;if(type&&d.type!==type)return false;if(start&&String(d.deduction_date)<start)return false;if(end&&String(d.deduction_date)>end)return false;return true;
+  }).sort((a,b)=>String(b.deduction_date||"").localeCompare(String(a.deduction_date||"")));
+  const total=list.reduce((s,d)=>s+Number(d.amount||0),0);const fines=list.filter(d=>d.type==="Trafik cezası").reduce((s,d)=>s+Number(d.amount||0),0);
+  if(count)count.textContent=`${list.length} kayıt`;
+  if(summary)summary.innerHTML=`<section class="admin-card"><div class="panel-head"><h2>Kayıt</h2></div><strong style="font-size:22px">${list.length}</strong></section><section class="admin-card"><div class="panel-head"><h2>Trafik cezaları</h2></div><strong style="font-size:22px">${deductionMoney(fines)}</strong></section><section class="admin-card"><div class="panel-head"><h2>Toplam ceza / kesinti</h2></div><strong style="font-size:22px">${deductionMoney(total)}</strong></section>`;
+  if(!list.length){table.innerHTML='<tr><td colspan="8"><div class="empty">Seçilen kriterlere uygun ceza veya kesinti bulunmuyor.</div></td></tr>';return;}
+  table.innerHTML=list.map(d=>{const p=profiles.find(x=>x.id===d.driver_id)||{};return `<tr><td>${escapeHtml(deductionDateText(d.deduction_date))}</td><td><strong>${escapeHtml(p.full_name||"—")}</strong><br><small>${escapeHtml(p.plate||"")}</small></td><td><span class="${deductionTypeClass(d.type)}">${escapeHtml(d.type||"Kesinti")}</span></td><td><strong>${deductionMoney(d.amount)}</strong></td><td>${escapeHtml(d.region||"—")}</td><td>${escapeHtml(d.note||"—")}</td><td>${d.document_path?`<button type="button" onclick="viewDeductionDocument('${d.id}')">Gör</button>`:"—"}</td><td><div class="actions"><button type="button" onclick="openDeductionModal('${d.id}')">Düzelt</button><button type="button" class="danger" onclick="deleteDeduction('${d.id}')">Sil</button></div></td></tr>`;}).join("");
+}
+
+function clearAdminDeductionFilters(){
+  ["adminDeductionSearch","adminDeductionStart","adminDeductionEnd"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  ["adminDeductionDriver","adminDeductionType"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  renderAdminDeductions();
 }
 
 </script>
