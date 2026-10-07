@@ -755,10 +755,19 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .admin-notify-empty{padding:20px 8px;text-align:center;color:#64748b;font-size:13px}
 .admin-notify-enable{border:1px solid #dbe4ee;background:#fff;color:#334155;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
 .admin-notify-enable.on{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
+.admin-persistent-notify-wrap{position:fixed;right:18px;bottom:18px;width:min(390px,calc(100vw - 36px));display:flex;flex-direction:column;gap:10px;z-index:99999;pointer-events:none}
+.admin-persistent-notify{pointer-events:auto;background:#fff;border:1px solid #dbe4ee;border-left:4px solid #16a34a;border-radius:16px;box-shadow:0 18px 45px rgba(15,23,42,.22);padding:14px 42px 14px 14px;position:relative}
+.admin-persistent-notify.fuel{border-left-color:#f59e0b}
+.admin-persistent-notify strong{display:block;color:#162033;font-size:14px;line-height:1.35}
+.admin-persistent-notify span{display:block;color:#64748b;font-size:12px;margin-top:4px;line-height:1.4}
+.admin-persistent-notify-close{position:absolute;right:9px;top:9px;border:0;background:#f1f5f9;color:#475569;border-radius:8px;width:28px;height:28px;font-size:18px;line-height:28px;cursor:pointer}
+.admin-persistent-notify-close:hover{background:#e2e8f0}
 </style>
 </head>
 
 <body>
+
+<div id="adminPersistentNotifyWrap" class="admin-persistent-notify-wrap" aria-live="polite" aria-atomic="false"></div>
 
 <!-- GİRİŞ -->
 <div id="loginScreen">
@@ -2216,6 +2225,10 @@ let driverEndDate="";
 let adminStartDate="";
 let adminEndDate="";
 
+// Son kaydedilmiş ay sonu işleminin ayı; tarih aralıkları bunun üzerinden otomatik başlatılır.
+let latestAdminMonthEndStart="";
+let latestDriverMonthEndStart="";
+
 /* ARAÇ DURUMU / YÖNETİCİ BİLDİRİMLERİ */
 let adminVehicleNotifications=[];
 let adminVehicleNotifyChannel=null;
@@ -2332,6 +2345,31 @@ function getCurrentPeriod(){
 /* =========================================================
    TARİH ARALIĞI
 ========================================================= */
+
+async function loadLatestMonthEndPeriod(scope="admin"){
+  try{
+    let q=supabaseClient.from("monthly_km_starts").select("month_start,end_km,driver_id").not("end_km","is",null).order("month_start",{ascending:false}).limit(1);
+    if(scope==="driver" && currentUser?.id)q=q.eq("driver_id",currentUser.id);
+    const {data,error}=await q; if(error)throw error;
+    const latest=data?.[0]?.month_start||"";
+    if(scope==="driver")latestDriverMonthEndStart=latest; else latestAdminMonthEndStart=latest;
+  }catch(e){console.warn("Son ay sonu dönemi okunamadı:",e);}
+}
+function autoPeriodFromMonthStart(monthStart){
+  const today=getIstanbulDateString();
+  if(!/^\d{4}-\d{2}-01$/.test(monthStart||""))return {start:today.slice(0,8)+"01",end:today};
+  const key=monthStart.slice(0,7); const b=monthBounds(key); return {start:b.start,end:key===today.slice(0,7)?today:b.end};
+}
+function applyAutomaticDateRanges(){
+  const dp=autoPeriodFromMonthStart(latestDriverMonthEndStart||latestAdminMonthEndStart);
+  const ap=autoPeriodFromMonthStart(latestAdminMonthEndStart||latestDriverMonthEndStart);
+  driverStartDate=dp.start; driverEndDate=dp.end; adminStartDate=ap.start; adminEndDate=ap.end;
+  const ids={driverStartDate:dp.start,driverEndDate:dp.end,adminStartDate:ap.start,adminEndDate:ap.end,filterStart:ap.start,filterEnd:ap.end,adminDeductionStart:ap.start,adminDeductionEnd:ap.end,adminAltStart:ap.start,adminAltEnd:ap.end};
+  Object.entries(ids).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value;});
+  driverEarningsStartDate=dp.start; driverEarningsEndDate=dp.end;
+  const des=document.getElementById("driverEarningsStartDate"), dee=document.getElementById("driverEarningsEndDate"); if(des)des.value=driverEarningsStartDate; if(dee)dee.value=driverEarningsEndDate;
+  updateDateLabels();
+}
 
 function initializeDateRanges(){
 
@@ -2755,10 +2793,13 @@ async function loadDriverData(){
   await Promise.all([
     loadDriverRecords(),
     loadMonthlyStartsForDriver(),
+    loadLatestMonthEndPeriod("driver"),
     loadVehicleChanges(),
     loadDriverDeductions(),
     loadAppSettings()
   ]);
+
+  applyAutomaticDateRanges();
 
   renderDriverSummary();
   renderDriverHistory();
@@ -4073,23 +4114,23 @@ async function enableAdminNotifications(){
 
 function playAdminNotificationSound(row=null,test=false){
   if(!adminNotificationReady || !row || row.status!=="available")return;
-  try{
-    const p=profiles.find(x=>x.id===row.driver_id)||{};
-    const driver=String(row.driver_name || p.full_name || "Şoför").trim();
-    const text=`${driver} araç müsait`;
-    if("speechSynthesis" in window){
-      window.speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(text);
-      u.lang="tr-TR";
-      u.rate=0.95;
-      u.pitch=1;
-      u.volume=1;
+  if(!(typeof window!=="undefined" && "speechSynthesis" in window))return;
+  const speak=()=>{
+    try{
+      const p=profiles.find(x=>x.id===row.driver_id)||{};
+      const driver=String(row.driver_name || p.full_name || "Şoför").trim();
       const voices=window.speechSynthesis.getVoices();
-      const trVoice=voices.find(v=>/^tr(-|_)/i.test(v.lang));
-      if(trVoice)u.voice=trVoice;
+      const trVoice=voices.find(v=>String(v.lang||"").toLowerCase()==="tr-tr") || voices.find(v=>/^tr(-|_)/i.test(String(v.lang||"")));
+      if(!trVoice){ console.warn("Türkçe konuşma sesi bu bilgisayarda bulunamadı; yabancı dilde seslendirme yapılmadı."); return; }
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(`${driver} araç müsait`);
+      u.lang=trVoice.lang || "tr-TR"; u.voice=trVoice; u.rate=0.95; u.pitch=1; u.volume=1;
       window.speechSynthesis.speak(u);
-    }
-  }catch(e){console.warn("Bildirim seslendirmesi yapılamadı:",e);}
+    }catch(e){console.warn("Bildirim seslendirmesi yapılamadı:",e);}
+  };
+  const voices=window.speechSynthesis.getVoices();
+  if(voices.length) speak();
+  else { const prev=window.speechSynthesis.onvoiceschanged; window.speechSynthesis.onvoiceschanged=()=>{try{if(typeof prev==="function")prev();}catch(e){} speak();}; setTimeout(speak,500); }
 }
 
 function playAdminFuelNotificationSound(){
@@ -4122,9 +4163,23 @@ function showDesktopVehicleNotification(row){
   }catch(e){}
 }
 
+function renderAdminPersistentNotifications(){
+  const wrap=document.getElementById("adminPersistentNotifyWrap"); if(!wrap)return;
+  const unread=adminVehicleNotifications.filter(x=>!x.read_at).slice(0,8);
+  wrap.innerHTML=unread.map(n=>{
+    const p=profiles.find(x=>x.id===n.driver_id)||{}; const driver=n.driver_name||p.full_name||"Şoför"; const plate=n.plate||p.plate||"Plaka yok";
+    const isFuel=n.status==="fuel_purchased"; const title=isFuel?"⛽ Akaryakıt alındı":"🟢 Araç müsait";
+    const message=isFuel?(n.message||"Akaryakıt alımı tamamlandı."):(n.message||"Şantiye işi tamamlandı, araç müsait bırakıldı.");
+    const safeId=String(n.id).replace(/'/g,"\\'");
+    return `<div class="admin-persistent-notify ${isFuel?"fuel":""}" id="adminPersistent_${escapeHtml(String(n.id))}"><button type="button" class="admin-persistent-notify-close" aria-label="Bildirimi kapat" title="Bildirimi kapat" onclick="closeAdminPersistentNotification('${safeId}')">×</button><strong>${title} — ${escapeHtml(driver)}</strong><span>${escapeHtml(plate)} · ${escapeHtml(fmtDateTime(n.created_at))}</span><span>${escapeHtml(message)}</span></div>`;
+  }).join("");
+}
+async function closeAdminPersistentNotification(id){ await markAdminVehicleNotificationRead(id); renderAdminPersistentNotifications(); }
+
 function showAdminVehicleNotification(row){
   adminVehicleNotifications=[row,...adminVehicleNotifications.filter(x=>x.id!==row.id)].slice(0,30);
   renderAdminVehicleNotifications();
+  renderAdminPersistentNotifications();
   if(row.status==="available")playAdminNotificationSound(row,false);
   showDesktopVehicleNotification(row);
   if(row.status==="fuel_purchased") toast(`⛽ ${row.driver_name || "Şoför"} akaryakıt alımını tamamladı.`);
@@ -4138,6 +4193,7 @@ async function markAdminVehicleNotificationRead(id){
   const readAt=new Date().toISOString();
   row.read_at=readAt;
   renderAdminVehicleNotifications();
+  renderAdminPersistentNotifications();
   const {error}=await supabaseClient.from("vehicle_status_notifications").update({read_at:readAt}).eq("id",id);
   if(error){
     row.read_at=null;
@@ -4152,6 +4208,7 @@ async function markAllAdminVehicleNotificationsRead(){
   const readAt=new Date().toISOString();
   adminVehicleNotifications.forEach(x=>{if(!x.read_at)x.read_at=readAt;});
   renderAdminVehicleNotifications();
+  renderAdminPersistentNotifications();
   const {error}=await supabaseClient.from("vehicle_status_notifications").update({read_at:readAt}).in("id",unread);
   if(error)console.warn("Bildirimler okundu işaretlenemedi:",error);
 }
@@ -4163,6 +4220,7 @@ async function loadAdminVehicleNotifications(){
     if(error)throw error;
     adminVehicleNotifications=(data||[]);
     renderAdminVehicleNotifications();
+    renderAdminPersistentNotifications();
   }catch(e){
     console.warn("Araç durumu bildirimleri okunamadı:",e);
   }
@@ -4249,7 +4307,8 @@ async function loadAdminData(){
       loadVehicleChanges(),
       loadAllDocs(),
       loadDeductions(),
-      loadAppSettings()
+      loadAppSettings(),
+      loadLatestMonthEndPeriod("admin")
     ]);
 
 
@@ -4268,6 +4327,12 @@ async function loadAdminData(){
     renderAdminYedek();
     renderAdminDeductions();
     renderAdminDocs();
+
+    applyAutomaticDateRanges();
+    renderAdminStats();
+    renderRecords();
+    renderAdminYedek();
+    renderAdminDeductions();
 
 
   }catch(error){
