@@ -154,7 +154,7 @@ h1,h2,h3,p{margin:0}
 /* ---------- Form alanları ---------- */
 .field{margin-bottom:14px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-input[type=text],input[type=password],input[type=number],input[type=date],input[type=time]{
+input[type=text],input[type=email],input[type=tel],input[type=password],input[type=number],input[type=date],input[type=time]{
   width:100%;min-width:0;min-height:46px;padding:11px 13px;
   background:var(--field);color:var(--text);
   border:1px solid var(--line);border-radius:10px;outline:none;font-size:16px;
@@ -844,17 +844,16 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
       <div id="forgotPanel" class="auth-panel hidden">
         <h2>Şifremi Unuttum</h2>
-        <p class="auth-help">Kayıtlı telefonunuza SMS ile doğrulama kodu gönderilir.</p>
+        <p class="auth-help">Kayıtlı e-posta adresinize şifre sıfırlama bağlantısı gönderilir.</p>
         <div id="forgotStep1">
-          <div class="field"><label for="forgotPhone">Telefon</label><input type="tel" id="forgotPhone" placeholder="05xx xxx xx xx" autocomplete="tel"></div>
+          <div class="field"><label for="forgotEmail">E-posta</label><input type="email" id="forgotEmail" placeholder="ornek@email.com" autocomplete="email"></div>
           <div id="forgotStatus" class="status" role="status" aria-live="polite"></div>
-          <button type="button" class="btn-orange" id="forgotSendButton" onclick="sendForgotCode()">SMS kodu gönder</button>
+          <button type="button" class="btn-orange" id="forgotSendButton" onclick="sendForgotEmail()">Sıfırlama bağlantısı gönder</button>
         </div>
         <div id="forgotStep2" class="hidden">
-          <div class="field"><label for="forgotCode">SMS kodu</label><input type="text" id="forgotCode" inputmode="numeric" maxlength="6" placeholder="6 haneli kod"></div>
           <div class="field"><label for="forgotNewPassword">Yeni şifre</label><input type="password" id="forgotNewPassword" placeholder="Yeni şifreniz" autocomplete="new-password"></div>
           <div class="field"><label for="forgotNewPassword2">Yeni şifre tekrar</label><input type="password" id="forgotNewPassword2" placeholder="Yeni şifrenizi tekrar girin" autocomplete="new-password"></div>
-          <button type="button" class="btn-orange" id="forgotSaveButton" onclick="verifyForgotCodeAndSave()">Kodu doğrula ve şifreyi değiştir</button>
+          <button type="button" class="btn-orange" id="forgotSaveButton" onclick="saveForgotEmailPassword()">Yeni şifreyi kaydet</button>
         </div>
         <button type="button" class="auth-back" onclick="hideAuthPanels()">← Giriş ekranına dön</button>
       </div>
@@ -2685,6 +2684,14 @@ async function login(){
       ({data,error}=await supabaseClient.auth.signInWithPassword({email:loginValue.toLowerCase(),password}));
     }else{
       ({data,error}=await supabaseClient.auth.signInWithPassword({email:usernameToEmail(loginValue),password}));
+      if(error){
+        try{
+          const {data:emailData,error:emailError}=await supabaseClient.rpc("filora_get_login_email",{p_username:loginValue});
+          if(!emailError && emailData){
+            ({data,error}=await supabaseClient.auth.signInWithPassword({email:String(emailData).toLowerCase(),password}));
+          }
+        }catch(e){}
+      }
       if(error){
         try{
           const {data:phoneData,error:phoneError}=await supabaseClient.rpc("filora_get_login_phone",{p_username:loginValue});
@@ -9984,6 +9991,8 @@ function hideAuthPanels(){
   document.getElementById("forgotPanel")?.classList.add("hidden");
   document.getElementById("signupStatus")?.replaceChildren();
   document.getElementById("forgotStatus")?.replaceChildren();
+  document.getElementById("forgotStep1")?.classList.remove("hidden");
+  document.getElementById("forgotStep2")?.classList.add("hidden");
   document.getElementById("loginButton")?.classList.remove("hidden");
   document.querySelector(".login-links")?.classList.remove("hidden");
 }
@@ -10001,7 +10010,7 @@ function showForgotPassword(){
   document.getElementById("forgotPanel")?.classList.remove("hidden");
   document.getElementById("loginButton")?.classList.add("hidden");
   document.querySelector(".login-links")?.classList.add("hidden");
-  document.getElementById("forgotPhone")?.focus();
+  document.getElementById("forgotEmail")?.focus();
 }
 
 async function submitSignup(){
@@ -10019,109 +10028,97 @@ async function submitSignup(){
   if(!/^\+90\d{10}$/.test(phone)){
     showStatus("signupStatus","Telefon numarası geçersiz. Örn. 05xx xxx xx xx","error"); return;
   }
-  if(password.length<6){
-    showStatus("signupStatus","Şifre en az 6 karakter olmalıdır.","error"); return;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showStatus("signupStatus","Geçerli bir e-posta adresi girin.","error"); return;
   }
-  if(password!==password2){
-    showStatus("signupStatus","Şifreler aynı değil.","error"); return;
-  }
+  if(password.length<6){showStatus("signupStatus","Şifre en az 6 karakter olmalıdır.","error");return;}
+  if(password!==password2){showStatus("signupStatus","Şifreler aynı değil.","error");return;}
 
   if(btn)btn.disabled=true;
   showStatus("signupStatus","Başvurunuz oluşturuluyor...","success");
-
   try{
     const {data,error}=await supabaseClient.auth.signUp({
-      phone,
+      email,
       password,
       options:{
-        data:{
-          filora_signup:true,
-          full_name:fullName,
-          username,
-          email
-        }
+        data:{filora_signup:true,full_name:fullName,username,phone,email},
+        emailRedirectTo:window.location.origin+window.location.pathname
       }
     });
     if(error)throw error;
-
-    // Telefon doğrulaması açıksa kullanıcı SMS ile doğrulama adımına yönlendirilir.
-    if(data?.session){
-      await supabaseClient.auth.signOut();
-    }
-
-    showStatus("signupStatus","Başvurunuz alındı. Yönetici onayından sonra hesabınız aktif olacaktır.","success");
+    if(data?.session)await supabaseClient.auth.signOut();
+    showStatus("signupStatus","Başvurunuz alındı. E-posta doğrulaması isteniyorsa gelen kutunuzu kontrol edin. Yönetici onayından sonra hesabınız aktif olacaktır.","success");
     ["signupFullName","signupUsername","signupPhone","signupEmail","signupPassword","signupPassword2"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
   }catch(error){
     console.error("Üyelik başvurusu:",error);
-    showStatus("signupStatus",error?.message || "Üyelik başvurusu oluşturulamadı.","error");
-  }finally{
-    if(btn)btn.disabled=false;
-  }
+    const msg=String(error?.message||"");
+    showStatus("signupStatus",/already registered|already exists|user already/i.test(msg)?"Bu e-posta adresiyle zaten bir hesap var.":(msg||"Üyelik başvurusu oluşturulamadı."),"error");
+  }finally{if(btn)btn.disabled=false;}
 }
 
-let forgotPhonePending="";
-
-async function sendForgotCode(){
-  const phone=normalizePhoneTR(document.getElementById("forgotPhone")?.value||"");
+async function sendForgotEmail(){
+  const email=document.getElementById("forgotEmail")?.value.trim().toLowerCase()||"";
   const btn=document.getElementById("forgotSendButton");
-  if(!/^\+90\d{10}$/.test(phone)){
-    showStatus("forgotStatus","Telefon numarası geçersiz. Örn. 05xx xxx xx xx","error"); return;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showStatus("forgotStatus","Geçerli e-posta adresinizi girin.","error");return;
   }
   if(btn)btn.disabled=true;
-  showStatus("forgotStatus","SMS kodu gönderiliyor...","success");
+  showStatus("forgotStatus","Sıfırlama bağlantısı gönderiliyor...","success");
   try{
-    const {error}=await supabaseClient.auth.signInWithOtp({phone,options:{shouldCreateUser:false}});
+    const redirectTo=window.location.origin+window.location.pathname;
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo});
     if(error)throw error;
-    forgotPhonePending=phone;
-    document.getElementById("forgotStep2")?.classList.remove("hidden");
-    showStatus("forgotStatus","Kod telefonunuza gönderildi.","success");
-    document.getElementById("forgotCode")?.focus();
+    showStatus("forgotStatus","Eğer bu e-posta kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.","success");
   }catch(error){
-    console.error("SMS sıfırlama:",error);
-    showStatus("forgotStatus","SMS gönderilemedi. Telefon Auth ve SMS sağlayıcısını Supabase'de kontrol edin.","error");
-  }finally{
-    if(btn)btn.disabled=false;
-  }
+    console.error("E-posta ile şifre sıfırlama:",error);
+    showStatus("forgotStatus",error?.message||"Sıfırlama e-postası gönderilemedi. Supabase e-posta ayarlarını kontrol edin.","error");
+  }finally{if(btn)btn.disabled=false;}
 }
 
-async function verifyForgotCodeAndSave(){
-  const code=(document.getElementById("forgotCode")?.value||"").trim();
+async function saveForgotEmailPassword(){
   const p1=document.getElementById("forgotNewPassword")?.value||"";
   const p2=document.getElementById("forgotNewPassword2")?.value||"";
   const btn=document.getElementById("forgotSaveButton");
-  if(!/^\d{6}$/.test(code)){showStatus("forgotStatus","6 haneli SMS kodunu girin.","error");return;}
   if(p1.length<6){showStatus("forgotStatus","Yeni şifre en az 6 karakter olmalıdır.","error");return;}
   if(p1!==p2){showStatus("forgotStatus","Yeni şifreler aynı değil.","error");return;}
-  if(!forgotPhonePending){showStatus("forgotStatus","Önce SMS kodu isteyin.","error");return;}
   if(btn)btn.disabled=true;
   try{
-    const {data,error}=await supabaseClient.auth.verifyOtp({phone:forgotPhonePending,token:code,type:"sms"});
-    if(error)throw error;
-    const userId=data?.user?.id;
-    if(!userId)throw new Error("Doğrulama oturumu oluşturulamadı.");
-
+    const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!sessionData?.session)throw new Error("Önce e-postanıza gelen şifre sıfırlama bağlantısını açın.");
+    const userId=sessionData.session.user.id;
     const {data:profile,error:profileError}=await supabaseClient.from("profiles").select("id,active,role").eq("id",userId).maybeSingle();
     if(profileError)throw profileError;
     if(!profile || profile.active!==true){
       await supabaseClient.auth.signOut();
       throw new Error("Bu hesap henüz yönetici tarafından aktif edilmemiş.");
     }
-
-    const {error:updateError}=await supabaseClient.auth.updateUser({password:p1});
-    if(updateError)throw updateError;
+    const {error}=await supabaseClient.auth.updateUser({password:p1});
+    if(error)throw error;
     await supabaseClient.auth.signOut();
-    forgotPhonePending="";
-    showStatus("forgotStatus","Şifreniz başarıyla değiştirildi. Giriş ekranından yeni şifrenizle giriş yapabilirsiniz.","success");
-    document.getElementById("forgotCode").value="";
+    showStatus("forgotStatus","Şifreniz değiştirildi. Giriş ekranından yeni şifrenizle giriş yapabilirsiniz.","success");
     document.getElementById("forgotNewPassword").value="";
     document.getElementById("forgotNewPassword2").value="";
   }catch(error){
     console.error("Şifre değiştirme:",error);
-    showStatus("forgotStatus",error?.message || "Şifre değiştirilemedi.","error");
-  }finally{
-    if(btn)btn.disabled=false;
-  }
+    showStatus("forgotStatus",error?.message||"Şifre değiştirilemedi.","error");
+  }finally{if(btn)btn.disabled=false;}
 }
+
+// E-posta bağlantısıyla gelen recovery oturumunda yeni şifre alanlarını göster.
+try{
+  supabaseClient.auth.onAuthStateChange((event)=>{
+    if(event==="PASSWORD_RECOVERY"){
+      document.getElementById("signupPanel")?.classList.add("hidden");
+      document.getElementById("forgotPanel")?.classList.remove("hidden");
+      document.getElementById("loginButton")?.classList.add("hidden");
+      document.querySelector(".login-links")?.classList.add("hidden");
+      document.getElementById("forgotStep1")?.classList.add("hidden");
+      document.getElementById("forgotStep2")?.classList.remove("hidden");
+      showStatus("forgotStatus","E-posta bağlantısı doğrulandı. Yeni şifrenizi belirleyin.","success");
+    }
+  });
+}catch(e){console.warn("Şifre kurtarma dinleyicisi kurulamadı:",e);}
 
 function renderMembershipRequests(){
   const list=profiles.filter(p=>p.signup_pending===true && p.active!==true);
