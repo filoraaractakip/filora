@@ -809,6 +809,9 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 #driverVehicleChat .filo-chat-title{margin:0;padding:14px 16px;background:var(--bar);border-bottom:1px solid var(--line)}
 #driverVehicleChat .filo-chat-log{max-height:300px;min-height:140px;padding:14px 14px 8px;margin:0}
 #driverVehicleChat .filo-chat-compose{padding:6px 14px 14px}
+.filo-chat-msg{font-size:16px!important;font-weight:600;line-height:1.5}
+.filo-chat-meta{font-size:12px!important;font-weight:500}
+.filo-chat-compose input{font-size:16px!important;font-weight:600}
 .chat-launcher{display:none}
 @media(max-width:1279px){.chat-launcher{display:inline-flex}#adminApp.chat-narrow-open .chat-launcher{display:none}}
 @media(min-width:1280px){
@@ -1657,7 +1660,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
             </div>
             <div id="adminAnalysis"></div>
           </section>
-        <section class="panel" id="adminOverviewChatPanel"><div class="panel-head"><h2>Şoför mesajları</h2><span>Özel yazışma</span></div><p class="page-subtitle">Araç durumu bildiriminden şoför seçerek konuşmayı burada sürdürebilirsiniz.</p><div id="adminOverviewChatMount"></div></section></section>
+        </section>
 
 
         <!-- YAKIT KAYITLARI -->
@@ -4178,7 +4181,7 @@ async function saveRecord(){
    ADMIN
 ========================================================= */
 
-function showAdminPanel(){ const chat=document.getElementById("adminDriverChatWrap"); const chatMount=document.getElementById("adminOverviewChatMount"); if(chat&&chatMount&&chat.parentElement!==chatMount)chatMount.appendChild(chat);
+function showAdminPanel(){
 
   document
     .getElementById("loginScreen")
