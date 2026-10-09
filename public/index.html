@@ -812,6 +812,16 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .filo-chat-msg{font-size:16px!important;font-weight:600;line-height:1.5}
 .filo-chat-meta{font-size:12px!important;font-weight:500}
 .filo-chat-compose input{font-size:16px!important;font-weight:600}
+.overview-donut-center{background:var(--panel)!important}
+.overview-donut-center strong{color:var(--text)!important}
+.overview-donut-center span{color:var(--muted)!important}
+.overview-donut-legend span{color:var(--text)}
+.filo-chat-msg{position:relative}
+.filo-chat-msg.has-del{padding-right:34px}
+.filo-chat-del{position:absolute;top:5px;right:5px;width:24px;height:24px;border:0;border-radius:6px;background:rgba(0,0,0,.28);color:inherit;font-size:12px;cursor:pointer;opacity:0;transition:opacity .15s}
+.filo-chat-msg:hover .filo-chat-del,.filo-chat-del:focus{opacity:1}
+.filo-chat-del:hover{background:#e5484d;color:#fff}
+@media(hover:none){.filo-chat-del{opacity:.75}}
 .chat-launcher{display:none}
 @media(max-width:1279px){.chat-launcher{display:inline-flex}#adminApp.chat-narrow-open .chat-launcher{display:none}}
 @media(min-width:1280px){
@@ -1485,6 +1495,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
       <button type="button" class="filo-chat-chip" onclick="adminChatQuick('📍 Yeni iş var: ')">📍 Yeni iş</button>
       <button type="button" class="filo-chat-chip" onclick="adminChatQuick('Şantiye adresi: ')">Şantiye adresi</button>
       <button type="button" class="filo-chat-chip" onclick="adminChatQuick('Ne zaman yola çıkabilirsin?')">Ne zaman çıkarsın?</button>
+      <button type="button" class="filo-chat-chip" onclick="clearAdminChat()">🗑 Sohbeti temizle</button>
     </div>
     <div class="filo-chat-log" id="adminDriverChatLog"><div class="filo-chat-empty">Mesajlaşmak için yukarıdan bir şoför seçin.</div></div>
     <form class="filo-chat-compose" onsubmit="sendAdminDriverChatMessage(event)">
@@ -1525,7 +1536,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M15.5 16.5l2 2 3-3"/></svg>
           Trafik Ceza ve Kesinti
         </button>
-        <button type="button" class="nav-item" data-view="araclar" onclick="showAdminView('araclar')" hidden>
+        <button type="button" class="nav-item" data-view="araclar" onclick="showAdminView('araclar')">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg>
           Araçlar ve km
         </button>
@@ -1840,7 +1851,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
 
         <!-- ARAÇLAR VE KM -->
-        <section class="view hidden" id="view-araclar" hidden>
+        <section class="view hidden" id="view-araclar">
           <div class="report-actions" style="margin-bottom:14px">
             <button type="button" class="btn-secondary" onclick="exportVehiclesExcel()">
               <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
@@ -4437,7 +4448,8 @@ function filoChatTime(value){
 function renderFiloChatMessages(targetId,rows,ownId){
   const box=document.getElementById(targetId); if(!box)return;
   if(!rows||!rows.length){box.innerHTML='<div class="filo-chat-empty">Henüz mesaj yok. İlk mesajı yazabilirsiniz.</div>';return;}
-  box.innerHTML=rows.map(m=>`<div class="filo-chat-msg ${m.sender_id===ownId?'mine':''}">${escapeHtml(m.message||'')}<span class="filo-chat-meta">${escapeHtml(m.sender_name||(m.sender_id===ownId?'Siz':'Kullanıcı'))} · ${escapeHtml(filoChatTime(m.created_at))}</span></div>`).join("");
+  const canDel=targetId==="adminDriverChatLog";
+  box.innerHTML=rows.map(m=>`<div class="filo-chat-msg ${m.sender_id===ownId?'mine':''} ${canDel?'has-del':''}">${canDel&&m.id?`<button type="button" class="filo-chat-del" onclick="deleteFiloMessage('${escapeHtml(String(m.id))}')" title="Mesajı sil" aria-label="Mesajı sil">🗑</button>`:''}${escapeHtml(m.message||'')}<span class="filo-chat-meta">${escapeHtml(m.sender_name||(m.sender_id===ownId?'Siz':'Kullanıcı'))} · ${escapeHtml(filoChatTime(m.created_at))}</span></div>`).join("");
   box.scrollTop=box.scrollHeight;
 }
 async function loadFiloChat(driverId,targetId,ownId){
@@ -4491,7 +4503,7 @@ async function setupDriverVehicleChat(){
   const rows=await loadFiloChat(me,"driverVehicleChatLog",me);
   if(rows.some(m=>m.sender_id!==me&&!m.read_at)){openDriverChatPanel(true);markFiloChatRead(me,false);}
   if(driverChatChannel){try{supabaseClient.removeChannel(driverChatChannel);}catch(e){}}
-  driverChatChannel=supabaseClient.channel("filora-driver-chat-"+me).on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG,filter:"driver_id=eq."+me},p=>{
+  driverChatChannel=supabaseClient.channel("filora-driver-chat-"+me).on("postgres_changes",{event:"DELETE",schema:"public",table:FILO_MSG,filter:"driver_id=eq."+me},()=>loadFiloChat(me,"driverVehicleChatLog",me)).on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG,filter:"driver_id=eq."+me},p=>{
     const m=p.new||{};
     if(m.sender_id&&m.sender_id!==me){
       openDriverChatPanel(true);
@@ -4529,6 +4541,27 @@ function onAdminChatSelect(sel){
   const p=profiles.find(x=>x.id===id)||{};
   openAdminDriverChat(id,encodeURIComponent(p.full_name||"Şoför"));
 }
+async function deleteFiloMessage(id){
+  if(!id||!confirm("Bu mesaj kalıcı olarak silinsin mi?"))return;
+  try{
+    const {data,error}=await supabaseClient.from(FILO_MSG).delete().eq("id",id).select("id");
+    if(error)throw error;
+    if(!data||!data.length){toast("Mesaj silinemedi. Silme yetkisi için mesajlaşma SQL'ini çalıştırın.","error");return;}
+    await loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser?.id);
+    toast("Mesaj silindi.");
+  }catch(e){console.warn(e);toast("Mesaj silinemedi: "+(e.message||""),"error");}
+}
+async function clearAdminChat(){
+  if(!activeAdminChatDriverId){toast("Önce bir şoför seçin.","error");return;}
+  if(!confirm((activeAdminChatDriverName||"Bu şoför")+" ile olan TÜM mesajlar kalıcı olarak silinsin mi?"))return;
+  try{
+    const {data,error}=await supabaseClient.from(FILO_MSG).delete().eq("driver_id",activeAdminChatDriverId).select("id");
+    if(error)throw error;
+    if(!data||!data.length){toast("Silinecek mesaj yok ya da silme yetkisi eksik.","error");return;}
+    await loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser?.id);
+    toast("Sohbet temizlendi.");
+  }catch(e){console.warn(e);toast("Sohbet temizlenemedi: "+(e.message||""),"error");}
+}
 function adminChatQuick(text){
   const i=document.getElementById("adminDriverChatInput"); if(!i)return;
   i.value=text; i.focus();
@@ -4551,7 +4584,10 @@ function setupAdminChatRealtime(){
   if(!currentUser||!currentProfile||currentProfile.role!=="admin")return;
   renderAdminChatSelect(); loadAdminChatUnread();
   if(adminChatAllChannel){try{supabaseClient.removeChannel(adminChatAllChannel);}catch(e){}}
-  adminChatAllChannel=supabaseClient.channel("filora-admin-all-chat").on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG},p=>{
+  adminChatAllChannel=supabaseClient.channel("filora-admin-all-chat").on("postgres_changes",{event:"DELETE",schema:"public",table:FILO_MSG},()=>{
+    if(activeAdminChatDriverId)loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser.id);
+    loadAdminChatUnread();
+  }).on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG},p=>{
     const m=p.new; if(!m)return;
     const fromDriver=m.sender_id===m.driver_id;
     const viewing=activeAdminChatDriverId===m.driver_id&&adminChatPanelVisible();
@@ -5005,7 +5041,24 @@ function renderAdminStats(){
     : formatNumber(consumption);
 
 
+  renderOverviewDonut(fuel,adblue);
+
   updateDateLabels();
+}
+
+function renderOverviewDonut(fuel,adblue){
+  const d=document.getElementById("overviewDonut"); if(!d)return;
+  const total=fuel+adblue;
+  if(total>0){
+    const f=fuel/total*360;
+    d.style.background=`conic-gradient(#f47b20 0deg ${f}deg,#647de8 ${f}deg 360deg)`;
+  }else{
+    d.style.background="conic-gradient(#2a3a4f 0deg 360deg)";
+  }
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set("overviewDonutTotal",formatNumber(total));
+  set("overviewDonutFuel",formatNumber(fuel)+" lt");
+  set("overviewDonutAdblue",formatNumber(adblue)+" lt");
 }
 
 
@@ -7155,16 +7208,44 @@ function dateInRange(date,start,end){
   return !!date && (!start || date>=start) && (!end || date<=end);
 }
 
+function getFuelPeriods(driverId){
+  /* Dönem sınırları "Ay sonu" işaretli kayıtlardır.
+     Dönem = işaretli kayıt (dahil) → bir sonraki işaretli kayıt (hariç).
+     Her yakıt kaydı yalnızca BİR döneme girer; sonraki işaret yeni dönemi başlatır. */
+  const list=records
+    .filter(r=>r.driver_id===driverId && !r.vehicle_change_id)
+    .sort((a,b)=>getRecordDateTimeValue(a)-getRecordDateTimeValue(b));
+  const marks=[];
+  list.forEach((r,i)=>{ if(r.is_month_end && Number(r.km||0)>0)marks.push(i); });
+  const periods=[];
+  for(let k=0;k+1<marks.length;k++){
+    const A=list[marks[k]], B=list[marks[k+1]];
+    let fuel=0,adblue=0;
+    for(let i=marks[k];i<marks[k+1];i++){
+      fuel+=Number(list[i].fuel_liters||0);
+      adblue+=Number(list[i].adblue_liters||0);
+    }
+    const distance=Number(B.km)-Number(A.km);
+    periods.push({
+      startDate:getRecordDate(A),startKm:Number(A.km),
+      endDate:getRecordDate(B),endKm:Number(B.km),
+      distance,fuel,adblue,
+      kmPerLiter:(fuel>0&&distance>0)?distance/fuel:null,
+      consumption:(fuel>0&&distance>0)?fuel/distance*100:null
+    });
+  }
+  return periods;
+}
+
 function driverFuelEarnings(driverId,start,end){
-  /* Yakıt kazancı: iki ay sonu işareti arasındaki dönemde
-     (yapılan km ÷ alınan litre) × yakıt katsayısı.
-     Tüketim ne kadar düşükse (km/lt ne kadar yüksekse) kazanç o kadar artar. */
+  /* Yakıt kazancı = (dönem km ÷ dönem litre) × yakıt katsayısı.
+     Dönem, bir sonraki ay sonu işareti konunca kapanır; kazanç kapanış tarihinin ayına yazılır. */
   const coef=Number(fuelCoef||0);
   if(!(coef>0))return 0;
-  return getCycleInfo(driverId).closed.reduce((sum,c)=>{
-    if(!c.fromMark || !(c.fuel>0) || !(c.distance>0))return sum;
-    if(!dateInRange(c.endDate,start,end))return sum;
-    return sum+(c.distance/c.fuel)*coef;
+  return getFuelPeriods(driverId).reduce((sum,p)=>{
+    if(!(p.kmPerLiter>0))return sum;
+    if(!dateInRange(p.endDate,start,end))return sum;
+    return sum+p.kmPerLiter*coef;
   },0);
 }
 
@@ -9363,7 +9444,7 @@ function renderOptions(){
     panel("amount","Sefer tutarları (TL)","Örn. 300","Sırayla <b>Kısa</b> (kırmızı), <b>Orta</b> (sarı) ve <b>Uzun</b> (yeşil) olarak renklenir. Raporlarda da aynı renkler kullanılır.")+
     `<section class="admin-card">
         <div class="panel-head"><h2>Yakıt kazancı katsayısı</h2><span>Şoför kazancı</span></div>
-        <p class="page-subtitle">İki ay sonu işareti arasındaki dönemde <b>(yapılan km ÷ alınan litre) × katsayı</b> şeklinde hesaplanır. Tüketim düştükçe kazanç artar. Sefer ve KM kazancından ayrı gösterilir.</p>
+        <p class="page-subtitle">Dönem, “Ay sonu” işaretli yakıt kaydından (dahil) bir sonraki işaretli kayda (hariç) kadardır; her yakıt kaydı tek döneme girer. Kazanç <b>(yapılan km ÷ alınan litre) × katsayı</b> şeklinde hesaplanır, tüketim düştükçe artar.</p>
         <div class="opt-add">
           <input type="number" id="fuelCoefInput" inputmode="decimal" min="0" step="0.01" value="${fuelCoef}">
           <span style="align-self:center;color:var(--muted);font-size:13px">TL × (km/lt)</span>
