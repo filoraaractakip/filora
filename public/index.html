@@ -787,6 +787,10 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .filo-chat-send:disabled{opacity:.5;cursor:not-allowed}
 .filo-chat-open{margin-top:8px;border:1px solid var(--border,#dbe4ee);border-radius:9px;padding:7px 9px;background:var(--card,#fff);color:var(--text,#162033);font-size:11px;font-weight:800;cursor:pointer}
 #adminDriverChatWrap{display:none}#adminDriverChatWrap.open{display:block}
+#driverVehicleChat{display:none}#driverVehicleChat.open{display:block}
+.filo-chat-select{width:100%;margin-bottom:8px;border:1px solid var(--border,#dbe4ee);border-radius:10px;padding:9px;background:var(--input-bg,#fff);color:inherit;font:inherit;font-size:12px}
+.filo-chat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.filo-chat-chip{border:1px solid #b8d9ca;border-radius:999px;padding:5px 9px;background:#e8f6ef;color:#14583f;font-size:11px;font-weight:700;cursor:pointer}
 @media(max-width:600px){.filo-chat{padding:10px}.filo-chat-log{max-height:180px}}
 </style>
 </head>
@@ -951,7 +955,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
       </div>
       <div class="filo-chat" id="driverVehicleChat" aria-live="polite">
         <div class="filo-chat-title">💬 Yönetim ile mesajlaşma</div>
-        <div class="filo-chat-log" id="driverVehicleChatLog"><div class="filo-chat-empty">Araç müsait bildiriminizden sonra yönetimle buradan yazışabilirsiniz.</div></div>
+        <div class="filo-chat-log" id="driverVehicleChatLog"><div class="filo-chat-empty">Yönetim size iş için buradan yazabilir.</div></div>
         <form class="filo-chat-compose" onsubmit="sendDriverVehicleChatMessage(event)">
           <input id="driverVehicleChatInput" maxlength="1500" placeholder="Mesajınızı yazın…" autocomplete="off" aria-label="Yönetim mesajı" />
           <button class="filo-chat-send" type="submit">Gönder</button>
@@ -1530,9 +1534,15 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
                 </div>
               </div>
               <div id="adminVehicleNotifyList"></div>
-              <div class="filo-chat" id="adminDriverChatWrap">
+              <div class="filo-chat open" id="adminDriverChatWrap">
                 <div class="filo-chat-title" id="adminDriverChatTitle">💬 Şoförle mesajlaşma</div>
-                <div class="filo-chat-log" id="adminDriverChatLog"><div class="filo-chat-empty">Mesajlaşmak için bir “Araç müsait” bildirimi seçin.</div></div>
+                <select class="filo-chat-select" id="adminChatDriverSelect" onchange="onAdminChatSelect(this)" aria-label="Şoför seç"></select>
+                <div class="filo-chat-chips">
+                  <button type="button" class="filo-chat-chip" onclick="adminChatQuick('📍 Yeni iş var: ')">📍 Yeni iş</button>
+                  <button type="button" class="filo-chat-chip" onclick="adminChatQuick('Şantiye adresi: ')">Şantiye adresi</button>
+                  <button type="button" class="filo-chat-chip" onclick="adminChatQuick('Ne zaman yola çıkabilirsin?')">Ne zaman çıkarsın?</button>
+                </div>
+                <div class="filo-chat-log" id="adminDriverChatLog"><div class="filo-chat-empty">Mesajlaşmak için yukarıdan bir şoför seçin.</div></div>
                 <form class="filo-chat-compose" onsubmit="sendAdminDriverChatMessage(event)">
                   <input id="adminDriverChatInput" maxlength="1500" placeholder="Şoföre mesaj yazın…" autocomplete="off" aria-label="Şoföre mesaj" />
                   <button class="filo-chat-send" type="submit">Gönder</button>
@@ -4148,7 +4158,7 @@ function showAdminPanel(){ const chat=document.getElementById("adminDriverChatWr
 
   restoreAdminView();
 
-  loadAdminData().then(()=>{ setupAdminVehicleNotifications(); setupDriverVehicleChat(); autoArmAdminNotifications(); });
+  loadAdminData().then(()=>{ setupAdminVehicleNotifications(); setupAdminChatRealtime(); autoArmAdminNotifications(); });
 
   startAdminAutoRefresh();
 }
@@ -4156,7 +4166,7 @@ function showAdminPanel(){ const chat=document.getElementById("adminDriverChatWr
 
 function updateAdminVehicleNotifyBadge(){
   const badge=document.getElementById("adminVehicleNotifyBadge");
-  const count=adminVehicleNotifications.filter(x=>!x.read_at).length;
+  const count=adminVehicleNotifications.filter(x=>!x.read_at).length+adminChatUnreadTotal();
   if(!badge)return;
   badge.textContent=count>99 ? "99+" : String(count);
   badge.classList.toggle("hidden",count===0);
@@ -4365,6 +4375,7 @@ async function notifyVehicleAvailable(){
     if(card)card.classList.add("available");
     if(text)text.textContent=`Araç müsait olarak bildirildi · ${now}. Son bildiriminiz yönetime iletildi.`;
     toast("🟢 Araç müsait bildirimi yönetime gönderildi.");
+    openDriverChatPanel(true);
   }catch(e){
     console.error("Araç durumu bildirimi:",e);
     const msg=/vehicle_status_notifications|schema cache|relation/i.test(e.message||"")
@@ -4376,46 +4387,49 @@ async function notifyVehicleAvailable(){
   }
 }
 
+const FILO_MSG="driver_vehicle_messages";
+let adminChatUnread={};let adminChatAllChannel=null;
 function filoChatTime(value){
   try{return new Date(value).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}catch(e){return "";}
 }
 function renderFiloChatMessages(targetId,rows,ownId){
   const box=document.getElementById(targetId); if(!box)return;
   if(!rows||!rows.length){box.innerHTML='<div class="filo-chat-empty">Henüz mesaj yok. İlk mesajı yazabilirsiniz.</div>';return;}
-  box.innerHTML=rows.map(m=>`<div class="filo-chat-msg ${m.sender_id===ownId?'mine':''}">${escapeHtml(m.message||'')}<span class="filo-chat-meta">${escapeHtml(m.sender_name|| (m.sender_id===ownId?'Siz':'Kullanıcı'))} · ${escapeHtml(filoChatTime(m.created_at))}</span></div>`).join("");
+  box.innerHTML=rows.map(m=>`<div class="filo-chat-msg ${m.sender_id===ownId?'mine':''}">${escapeHtml(m.message||'')}<span class="filo-chat-meta">${escapeHtml(m.sender_name||(m.sender_id===ownId?'Siz':'Kullanıcı'))} · ${escapeHtml(filoChatTime(m.created_at))}</span></div>`).join("");
   box.scrollTop=box.scrollHeight;
 }
 async function loadFiloChat(driverId,targetId,ownId){
-  if(!driverId || !supabaseClient)return;
+  if(!driverId||!supabaseClient)return [];
   try{
-    const {data,error}=await supabaseClient.from("driver_vehicle_messages").select("id,driver_id,sender_id,message,created_at").eq("driver_id",driverId).order("created_at",{ascending:true}).limit(100);
+    const {data,error}=await supabaseClient.from(FILO_MSG).select("id,driver_id,sender_id,message,created_at,read_at").eq("driver_id",driverId).order("created_at",{ascending:true}).limit(100);
     if(error)throw error;
-    const rows=(data||[]).map(m=>({...m,sender_name:m.sender_id===driverId?(profiles.find(p=>p.id===driverId)?.full_name||"Şoför"):(m.sender_id===currentUser?.id?(currentProfile?.full_name||"Siz"):(profiles.find(p=>p.id===m.sender_id)?.full_name||"Yönetim"))}));
+    const rows=(data||[]).map(m=>({...m,sender_name:m.sender_id===driverId?(profiles.find(p=>p.id===driverId)?.full_name||"Şoför"):(m.sender_id===currentUser?.id?(currentProfile?.full_name||"Siz"):"Yönetim")}));
     renderFiloChatMessages(targetId,rows,ownId);
+    return rows;
   }catch(e){
     console.warn("Mesajlar yüklenemedi:",e);
     const box=document.getElementById(targetId); if(box)box.innerHTML='<div class="filo-chat-empty">Mesaj alanını kullanmak için Supabase mesajlaşma SQL kurulumunu çalıştırın.</div>';
+    return [];
   }
 }
-async function openAdminDriverChat(driverId,driverName){
-  if(!driverId)return;
-  activeAdminChatDriverId=driverId; try{driverName=decodeURIComponent(driverName||"");}catch(e){} activeAdminChatDriverName=driverName||"Şoför";
-  const wrap=document.getElementById("adminDriverChatWrap"); if(wrap)wrap.classList.add("open");
-  const title=document.getElementById("adminDriverChatTitle"); if(title)title.textContent=`💬 ${activeAdminChatDriverName} ile mesajlaşma`;
-  await loadFiloChat(driverId,"adminDriverChatLog",currentUser?.id);
-  if(adminChatChannel){try{await supabaseClient.removeChannel(adminChatChannel);}catch(e){}}
-  adminChatChannel=supabaseClient.channel("filora-admin-driver-chat-"+driverId).on("postgres_changes",{event:"INSERT",schema:"public",table:"driver_vehicle_messages",filter:"driver_id=eq."+driverId},()=>loadFiloChat(driverId,"adminDriverChatLog",currentUser?.id)).subscribe();
-}
-async function sendAdminDriverChatMessage(event){
-  if(event)event.preventDefault();
-  const input=document.getElementById("adminDriverChatInput"); const message=(input?.value||"").trim();
-  if(!message||!activeAdminChatDriverId||!currentUser)return;
-  const btn=input?.parentElement?.querySelector("button"); if(btn)btn.disabled=true;
+async function markFiloChatRead(driverId,asAdmin){
   try{
-    const {error}=await supabaseClient.from("driver_vehicle_messages").insert({driver_id:activeAdminChatDriverId,sender_id:currentUser.id,message});
-    if(error)throw error; input.value=""; await loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser.id);
-  }catch(e){toast("Mesaj gönderilemedi. Supabase mesajlaşma SQL kurulumunu kontrol edin.","error");console.warn(e);}
-  finally{if(btn)btn.disabled=false;}
+    let q=supabaseClient.from(FILO_MSG).update({read_at:new Date().toISOString()}).eq("driver_id",driverId).is("read_at",null);
+    q=asAdmin?q.eq("sender_id",driverId):q.neq("sender_id",driverId);
+    await q;
+  }catch(e){console.warn("Okundu işaretlenemedi:",e);}
+}
+
+/* ---------- ŞOFÖR ---------- */
+function driverChatFlagKey(){return "filora_chat_open_"+(currentUser?.id||"");}
+function openDriverChatPanel(persist){
+  const el=document.getElementById("driverVehicleChat"); if(el)el.classList.add("open");
+  if(persist){try{localStorage.setItem(driverChatFlagKey(),String(Date.now()));}catch(e){}}
+  const t=document.getElementById("driverVehicleStatusText");
+  if(t&&persist&&!/yazabilir/.test(t.textContent))t.textContent+=" Yönetim iş için size yazabilir.";
+}
+function driverChatShouldBeOpen(){
+  try{const t=Number(localStorage.getItem(driverChatFlagKey())||0);return t&&Date.now()-t<12*3600*1000;}catch(e){return false;}
 }
 async function sendDriverVehicleChatMessage(event){
   if(event)event.preventDefault();
@@ -4423,16 +4437,99 @@ async function sendDriverVehicleChatMessage(event){
   const input=document.getElementById("driverVehicleChatInput"); const message=(input?.value||"").trim(); if(!message)return;
   const btn=input?.parentElement?.querySelector("button"); if(btn)btn.disabled=true;
   try{
-    const {error}=await supabaseClient.from("driver_vehicle_messages").insert({driver_id:currentUser.id,sender_id:currentUser.id,message});
+    const {error}=await supabaseClient.from(FILO_MSG).insert({driver_id:currentUser.id,sender_id:currentUser.id,message});
     if(error)throw error; input.value=""; await loadFiloChat(currentUser.id,"driverVehicleChatLog",currentUser.id);
   }catch(e){toast("Mesaj gönderilemedi. Mesajlaşma için Supabase SQL kurulumu gerekiyor.","error");console.warn(e);}
   finally{if(btn)btn.disabled=false;}
 }
-function setupDriverVehicleChat(){
+async function setupDriverVehicleChat(){
   if(!currentUser||!currentProfile||currentProfile.role!=="driver")return;
-  loadFiloChat(currentUser.id,"driverVehicleChatLog",currentUser.id);
+  const me=currentUser.id;
+  if(driverChatShouldBeOpen())openDriverChatPanel(false);
+  const rows=await loadFiloChat(me,"driverVehicleChatLog",me);
+  if(rows.some(m=>m.sender_id!==me&&!m.read_at)){openDriverChatPanel(true);markFiloChatRead(me,false);}
   if(driverChatChannel){try{supabaseClient.removeChannel(driverChatChannel);}catch(e){}}
-  driverChatChannel=supabaseClient.channel("filora-driver-chat-"+currentUser.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"driver_vehicle_messages",filter:"driver_id=eq."+currentUser.id},()=>loadFiloChat(currentUser.id,"driverVehicleChatLog",currentUser.id)).subscribe();
+  driverChatChannel=supabaseClient.channel("filora-driver-chat-"+me).on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG,filter:"driver_id=eq."+me},p=>{
+    const m=p.new||{};
+    if(m.sender_id&&m.sender_id!==me){
+      openDriverChatPanel(true);
+      toast("💬 Yönetimden yeni mesaj: "+String(m.message||"").slice(0,60));
+      try{navigator.vibrate&&navigator.vibrate(150);}catch(e){}
+      markFiloChatRead(me,false);
+    }
+    loadFiloChat(me,"driverVehicleChatLog",me);
+  }).subscribe();
+}
+
+/* ---------- ADMİN ---------- */
+function adminChatUnreadTotal(){return Object.values(adminChatUnread).reduce((a,b)=>a+b,0);}
+function adminChatPanelVisible(){const p=document.getElementById("adminNotifyPanel");return !!p&&!p.classList.contains("hidden");}
+function renderAdminChatSelect(){
+  const sel=document.getElementById("adminChatDriverSelect"); if(!sel)return;
+  const cur=activeAdminChatDriverId||sel.value||"";
+  sel.innerHTML='<option value="">Şoför seçin…</option>'+profiles.filter(p=>p.role==="driver").map(p=>{
+    const u=adminChatUnread[p.id]||0;
+    return `<option value="${escapeHtml(p.id)}">${u?`💬 (${u}) `:""}${escapeHtml(p.full_name||"Şoför")}${p.plate?" · "+escapeHtml(p.plate):""}</option>`;
+  }).join("");
+  sel.value=cur;
+}
+function onAdminChatSelect(sel){
+  const id=sel.value; if(!id)return;
+  const p=profiles.find(x=>x.id===id)||{};
+  openAdminDriverChat(id,encodeURIComponent(p.full_name||"Şoför"));
+}
+function adminChatQuick(text){
+  const i=document.getElementById("adminDriverChatInput"); if(!i)return;
+  i.value=text; i.focus();
+}
+function adminChatUnreadChanged(){renderAdminChatSelect();updateAdminVehicleNotifyBadge();}
+async function loadAdminChatUnread(){
+  try{
+    const {data,error}=await supabaseClient.from(FILO_MSG).select("driver_id,sender_id").is("read_at",null).limit(500);
+    if(error)throw error;
+    adminChatUnread={};
+    (data||[]).forEach(m=>{if(m.sender_id===m.driver_id)adminChatUnread[m.driver_id]=(adminChatUnread[m.driver_id]||0)+1;});
+    adminChatUnreadChanged();
+  }catch(e){console.warn("Okunmamış mesajlar alınamadı:",e);}
+}
+function setupAdminChatRealtime(){
+  if(!currentUser||!currentProfile||currentProfile.role!=="admin")return;
+  renderAdminChatSelect(); loadAdminChatUnread();
+  if(adminChatAllChannel){try{supabaseClient.removeChannel(adminChatAllChannel);}catch(e){}}
+  adminChatAllChannel=supabaseClient.channel("filora-admin-all-chat").on("postgres_changes",{event:"INSERT",schema:"public",table:FILO_MSG},p=>{
+    const m=p.new; if(!m)return;
+    const fromDriver=m.sender_id===m.driver_id;
+    const viewing=activeAdminChatDriverId===m.driver_id&&adminChatPanelVisible();
+    if(m.driver_id===activeAdminChatDriverId)loadFiloChat(m.driver_id,"adminDriverChatLog",currentUser.id);
+    if(!fromDriver)return;
+    if(viewing){markFiloChatRead(m.driver_id,true);}
+    else{adminChatUnread[m.driver_id]=(adminChatUnread[m.driver_id]||0)+1;adminChatUnreadChanged();}
+    const name=profiles.find(x=>x.id===m.driver_id)?.full_name||"Şoför";
+    toast(`💬 ${name}: ${String(m.message||"").slice(0,60)}`);
+    if("Notification" in window&&Notification.permission==="granted"){try{new Notification("FILORA — Yeni mesaj",{body:`${name}: ${m.message}`});}catch(e){}}
+  }).subscribe();
+}
+async function openAdminDriverChat(driverId,driverName){
+  if(!driverId)return;
+  activeAdminChatDriverId=driverId; try{driverName=decodeURIComponent(driverName||"");}catch(e){} activeAdminChatDriverName=driverName||"Şoför";
+  const wrap=document.getElementById("adminDriverChatWrap"); if(wrap)wrap.classList.add("open");
+  const title=document.getElementById("adminDriverChatTitle"); if(title)title.textContent=`💬 ${activeAdminChatDriverName} ile mesajlaşma`;
+  const sel=document.getElementById("adminChatDriverSelect"); if(sel)sel.value=driverId;
+  await loadFiloChat(driverId,"adminDriverChatLog",currentUser?.id);
+  delete adminChatUnread[driverId]; adminChatUnreadChanged();
+  markFiloChatRead(driverId,true);
+}
+async function sendAdminDriverChatMessage(event){
+  if(event)event.preventDefault();
+  const input=document.getElementById("adminDriverChatInput"); const message=(input?.value||"").trim();
+  if(!activeAdminChatDriverId){toast("Önce bir şoför seçin.","error");return;}
+  if(!message||!currentUser)return;
+  const btn=input?.parentElement?.querySelector("button"); if(btn)btn.disabled=true;
+  try{
+    const {error}=await supabaseClient.from(FILO_MSG).insert({driver_id:activeAdminChatDriverId,sender_id:currentUser.id,message});
+    if(error)throw error; input.value=""; await loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser.id);
+  }catch(e){toast("Mesaj gönderilemedi. Supabase mesajlaşma SQL kurulumunu kontrol edin.","error");console.warn(e);}
+  finally{if(btn)btn.disabled=false;}
 }
 
 async function notifyFuelPurchased(){
