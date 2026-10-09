@@ -735,7 +735,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .driver-earnings-dashboard .empty{color:#dce8f0 !important}
 @media(max-width:700px){.driver-earnings-dashboard{background:#0f1b24 !important}}
 
-</style>
+.overview-donut-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:8px 0}.overview-donut{width:164px;height:164px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#f47b20 0deg,#647de8 360deg);flex-shrink:0}.overview-donut-center{width:108px;height:108px;border-radius:50%;background:var(--card,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center}.overview-donut-center strong{font-size:22px;color:var(--text,#162033)}.overview-donut-center span{font-size:12px;color:var(--muted,#64748b)}.overview-donut-legend{display:grid;gap:12px;min-width:180px}.overview-donut-legend div{display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:8px;font-size:13px}.donut-key{width:10px;height:10px;border-radius:50%;display:block}.fuel-key{background:#f47b20}.adblue-key{background:#647de8}#adminDriverChatInput{color:#172033!important;background:#fff!important;caret-color:#172033!important}#adminDriverChatInput::placeholder{color:#64748b!important;opacity:1}@media(max-width:600px){.overview-donut{width:138px;height:138px}.overview-donut-center{width:92px;height:92px}}</style>
 <style>
 /* Araç durumu / yönetici bildirimleri — mevcut tasarıma ek, mevcut veriye dokunmaz */
 .vehicle-status-card{margin-bottom:16px;border:1px solid #dbe4ee;border-radius:16px;background:#fff;padding:16px;box-shadow:0 4px 14px rgba(15,23,42,.04);transition:border-color .2s ease,background .2s ease,box-shadow .2s ease}.vehicle-status-card.available{border-color:#bbf7d0;background:#f0fdf4;box-shadow:0 5px 16px rgba(22,163,74,.08)}
@@ -1466,7 +1466,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M15.5 16.5l2 2 3-3"/></svg>
           Trafik Ceza ve Kesinti
         </button>
-        <button type="button" class="nav-item" data-view="araclar" onclick="showAdminView('araclar')">
+        <button type="button" class="nav-item" data-view="araclar" onclick="showAdminView('araclar')" hidden>
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg>
           Araçlar ve km
         </button>
@@ -1586,7 +1586,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
             </div>
           </div>
 
-          <div class="stats stats-3" style="margin-bottom:16px">
+          <section class="panel" aria-labelledby="overviewDonutTitle"><div class="panel-head"><h2 id="overviewDonutTitle">Yakıt ve AdBlue dağılımı</h2><span>Seçili tarih aralığı</span></div><div class="overview-donut-wrap"><div id="overviewDonut" class="overview-donut" role="img" aria-label="Yakıt ve AdBlue miktarlarının dairesel grafiği"><div class="overview-donut-center"><strong id="overviewDonutTotal">0</strong><span>litre</span></div></div><div class="overview-donut-legend"><div><i class="donut-key fuel-key"></i><span>Yakıt</span><strong id="overviewDonutFuel">0 lt</strong></div><div><i class="donut-key adblue-key"></i><span>AdBlue</span><strong id="overviewDonutAdblue">0 lt</strong></div></div></div></section><div class="stats stats-3" style="margin-bottom:16px">
             <div class="stat">
               <div class="stat-label">Sefer</div>
               <div class="stat-value"><span id="adminTripCount">—</span></div>
@@ -1608,7 +1608,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
             </div>
             <div id="adminAnalysis"></div>
           </section>
-        </section>
+        <section class="panel" id="adminOverviewChatPanel"><div class="panel-head"><h2>Şoför mesajları</h2><span>Özel yazışma</span></div><p class="page-subtitle">Araç durumu bildiriminden şoför seçerek konuşmayı burada sürdürebilirsiniz.</p><div id="adminOverviewChatMount"></div></section></section>
 
 
         <!-- YAKIT KAYITLARI -->
@@ -1621,8 +1621,8 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
             <div class="filters">
               <input type="text" id="recordSearch" placeholder="Şoför veya plaka ara" aria-label="Şoför veya plaka ara">
-              <input type="date" id="filterStart" aria-label="Filtre başlangıç tarihi">
-              <input type="date" id="filterEnd" aria-label="Filtre bitiş tarihi">
+              
+              
               <button type="button" class="btn-secondary" id="clearFiltersButton">Temizle</button>
             </div>
             <div class="bulk-toolbar">
@@ -1786,7 +1786,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
 
         <!-- ARAÇLAR VE KM -->
-        <section class="view hidden" id="view-araclar">
+        <section class="view hidden" id="view-araclar" hidden>
           <div class="report-actions" style="margin-bottom:14px">
             <button type="button" class="btn-secondary" onclick="exportVehiclesExcel()">
               <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
@@ -2391,17 +2391,18 @@ function getCurrentPeriod(){
 
 async function loadLatestMonthEndPeriod(scope="admin"){
   try{
-    let q=supabaseClient.from("monthly_km_starts").select("month_start,end_km,driver_id").not("end_km","is",null).order("month_start",{ascending:false}).limit(1);
+    let q=supabaseClient.from("fuel_records").select("fuel_date,created_at,driver_id").eq("is_month_end",true).order("fuel_date",{ascending:false}).limit(1);
     if(scope==="driver" && currentUser?.id)q=q.eq("driver_id",currentUser.id);
-    const {data,error}=await q; if(error)throw error;
-    const latest=data?.[0]?.month_start||"";
+    const {data,error}=await q;
+    if(error)throw error;
+    const latest=data?.[0]?.fuel_date || (data?.[0]?.created_at ? getIstanbulDateString(new Date(data[0].created_at)) : "");
     if(scope==="driver")latestDriverMonthEndStart=latest; else latestAdminMonthEndStart=latest;
   }catch(e){console.warn("Son ay sonu dönemi okunamadı:",e);}
 }
-function autoPeriodFromMonthStart(monthStart){
+function autoPeriodFromMonthStart(monthEndDate){
   const today=getIstanbulDateString();
-  if(!/^\d{4}-\d{2}-01$/.test(monthStart||""))return {start:today.slice(0,8)+"01",end:today};
-  const key=monthStart.slice(0,7); const b=monthBounds(key); return {start:b.start,end:key===today.slice(0,7)?today:b.end};
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(monthEndDate||""))return {start:today.slice(0,8)+"01",end:today};
+  return {start:monthEndDate,end:today};
 }
 const FILORA_DATE_RANGE_IDS=[
   "driverStartDate","driverEndDate",
@@ -2451,8 +2452,8 @@ function applyAutomaticDateRanges(){
     adminStartDate:adminStartDate,adminEndDate:adminEndDate,
     filterStart:getSavedFiloraDate("filterStart")||adminStartDate,
     filterEnd:getSavedFiloraDate("filterEnd")||adminEndDate,
-    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||adminStartDate,
-    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||adminEndDate,
+    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||(getIstanbulDateString().slice(0,4)+"-01-01"),
+    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||(getIstanbulDateString().slice(0,4)+"-12-31"),
     adminAltStart:getSavedFiloraDate("adminAltStart")||adminStartDate,
     adminAltEnd:getSavedFiloraDate("adminAltEnd")||adminEndDate
   };
@@ -2485,8 +2486,8 @@ function initializeDateRanges(){
     filterEnd:getSavedFiloraDate("filterEnd"),
     driverEarningsStartDate:getSavedFiloraDate("driverEarningsStartDate")||driverStartDate,
     driverEarningsEndDate:getSavedFiloraDate("driverEarningsEndDate")||driverEndDate,
-    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||adminStartDate,
-    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||adminEndDate,
+    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||(today.slice(0,4)+"-01-01"),
+    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||(today.slice(0,4)+"-12-31"),
     adminAltStart:getSavedFiloraDate("adminAltStart")||adminStartDate,
     adminAltEnd:getSavedFiloraDate("adminAltEnd")||adminEndDate
   };
@@ -4115,7 +4116,7 @@ async function saveRecord(){
    ADMIN
 ========================================================= */
 
-function showAdminPanel(){
+function showAdminPanel(){ const chat=document.getElementById("adminDriverChatWrap"); const chatMount=document.getElementById("adminOverviewChatMount"); if(chat&&chatMount&&chat.parentElement!==chatMount)chatMount.appendChild(chat);
 
   document
     .getElementById("loginScreen")
@@ -7611,8 +7612,8 @@ function renderRecords(){
   const more=document.getElementById("recordsMore");
 
   const search=document.getElementById("recordSearch").value.trim().toLowerCase();
-  const start=document.getElementById("filterStart").value;
-  const end=document.getElementById("filterEnd").value;
+  const start="";
+  const end="";
 
   let list=filterRecordsByDateRange(records,adminStartDate,adminEndDate);
 
