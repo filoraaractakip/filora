@@ -7659,16 +7659,7 @@ async function deleteDriver(driverId){
     const {
       error
     } =
-      await supabaseClient
-        .functions
-        .invoke(
-          "delete-driver",
-          {
-            body:{
-              driverId
-            }
-          }
-        );
+      await invokeFilo("delete-driver",{driverId});
 
 
     if(error)
@@ -7680,12 +7671,13 @@ async function deleteDriver(driverId){
 
   }catch(error){
 
-    console.error(error);
+    console.error("delete-driver:",error);
 
-    alert(
-      error.message ||
-      "Şoför silinemedi."
-    );
+    let status="";
+    try{status=error?.context?.status?` (HTTP ${error.context.status})`:"";}catch(e){}
+    const reason=await fnErrorMessage(error,"Şoför silinemedi.");
+
+    alert("Şoför silinemedi"+status+":\n"+reason);
   }
 }
 
@@ -8983,6 +8975,24 @@ async function saveKmRate(){
   renderOptions();
 }
 
+
+async function invokeFilo(name,body){
+  async function token(force){
+    let {data:{session}}=await supabaseClient.auth.getSession();
+    const exp=session?.expires_at?session.expires_at*1000:0;
+    if(force||!session||exp-Date.now()<60000){
+      try{const r=await supabaseClient.auth.refreshSession();if(r.data?.session)session=r.data.session;}catch(e){}
+    }
+    return session?.access_token||null;
+  }
+  let t=await token(false);
+  let res=await supabaseClient.functions.invoke(name,{body,headers:t?{Authorization:"Bearer "+t}:{}});
+  if(res.error&&res.error.context?.status===401){
+    t=await token(true);
+    if(t)res=await supabaseClient.functions.invoke(name,{body,headers:{Authorization:"Bearer "+t}});
+  }
+  return res;
+}
 
 async function fnErrorMessage(error,fallback){
   try{
@@ -10287,9 +10297,7 @@ async function saveDriver(){
       let fnError=null;
 
       try{
-        const {error}=await supabaseClient.functions.invoke("manage-driver",{
-          body:{action:"update",driverId:editId,fullName,username,phone,plate,password}
-        });
+        const {error}=await invokeFilo("manage-driver",{action:"update",driverId:editId,fullName,username,phone,plate,password});
         if(error)throw error;
       }catch(e){
         fnError=e;
@@ -10328,9 +10336,7 @@ async function saveDriver(){
 
     }else{
 
-      const {error}=await supabaseClient.functions.invoke("create-driver",{
-        body:{fullName,username,phone,plate,password}
-      });
+      const {error}=await invokeFilo("create-driver",{fullName,full_name:fullName,username,phone,plate,password});
 
       if(error)throw error;
 
@@ -10372,9 +10378,7 @@ async function toggleDriver(driverId){
     let fnError=null;
 
     try{
-      const {error}=await supabaseClient.functions.invoke("manage-driver",{
-        body:{action:"toggle",driverId}
-      });
+      const {error}=await invokeFilo("manage-driver",{action:"toggle",driverId});
       if(error)throw error;
     }catch(e){
       fnError=e;
