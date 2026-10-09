@@ -801,10 +801,27 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .chat-dock-badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--orange);color:var(--ink);font-size:11px;font-weight:800;line-height:20px;text-align:center}
 .chat-dock-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:14px}
 .chat-dock .filo-chat-log{flex:1;min-height:0;max-height:none;margin-bottom:10px}
-.chat-launcher{position:fixed;right:20px;bottom:20px;z-index:41;display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 18px;border:0;border-radius:999px;background:var(--orange);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45)}
+.chat-launcher{position:fixed;right:20px;bottom:20px;z-index:41;align-items:center;gap:8px;min-height:46px;padding:0 18px;border:0;border-radius:999px;background:var(--orange);color:var(--ink);font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45)}
 .chat-launcher:hover{background:var(--orange-hi)}
 .chat-launcher .chat-dock-badge{background:var(--ink);color:var(--orange-hi)}
-@media(min-width:1840px){.chat-dock{display:flex}.chat-launcher,.chat-dock-close{display:none!important}}
+/* Şoför sohbeti: admin paneliyle aynı görünüm */
+#driverVehicleChat{margin-top:14px;padding:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+#driverVehicleChat .filo-chat-title{margin:0;padding:14px 16px;background:var(--bar);border-bottom:1px solid var(--line)}
+#driverVehicleChat .filo-chat-log{max-height:300px;min-height:140px;padding:14px 14px 8px;margin:0}
+#driverVehicleChat .filo-chat-compose{padding:6px 14px 14px}
+.chat-launcher{display:none}
+@media(max-width:1279px){.chat-launcher{display:inline-flex}#adminApp.chat-narrow-open .chat-launcher{display:none}}
+@media(min-width:1280px){
+  .chat-dock{display:flex;width:340px}
+  .period-bar,.views{max-width:min(1180px,calc(100vw - 252px - 380px))}
+  #adminApp.chat-closed .chat-dock{display:none}
+  #adminApp.chat-closed .chat-launcher{display:inline-flex}
+  #adminApp.chat-closed .period-bar,#adminApp.chat-closed .views{max-width:1180px}
+}
+@media(min-width:1600px){
+  .chat-dock{width:380px}
+  .period-bar,.views{max-width:min(1180px,calc(100vw - 252px - 420px))}
+}
 @media(max-width:900px){.chat-dock{left:8px;right:8px;top:70px;bottom:8px;width:auto}.chat-launcher{right:14px;bottom:14px}}
 @media(max-width:600px){.filo-chat{padding:12px}.filo-chat-log{max-height:200px}}
 </style>
@@ -4488,8 +4505,11 @@ function adminChatUnreadTotal(){return Object.values(adminChatUnread).reduce((a,
 function adminChatPanelVisible(){const d=document.getElementById("adminChatDock");return !!d&&getComputedStyle(d).display!=="none";}
 function toggleAdminChatDock(force){
   const d=document.getElementById("adminChatDock"); if(!d)return;
-  const open=typeof force==="boolean"?force:!d.classList.contains("open");
-  d.classList.toggle("open",open);
+  const app=document.getElementById("adminApp");
+  const wide=window.matchMedia("(min-width:1280px)").matches;
+  const open=typeof force==="boolean"?force:!adminChatPanelVisible();
+  if(wide){app?.classList.toggle("chat-closed",!open);}
+  else{d.classList.toggle("open",open);app?.classList.toggle("chat-narrow-open",open);}
   if(open&&activeAdminChatDriverId){loadFiloChat(activeAdminChatDriverId,"adminDriverChatLog",currentUser?.id);delete adminChatUnread[activeAdminChatDriverId];markFiloChatRead(activeAdminChatDriverId,true);adminChatUnreadChanged();}
 }
 function renderAdminChatSelect(){
