@@ -773,9 +773,14 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .filo-chat-title{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:7px}
 .filo-chat-log{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;padding:2px 1px 8px}
 .filo-chat-empty{font-size:12px;color:var(--muted,#64748b);padding:8px 2px}
-.filo-chat-msg{max-width:88%;padding:8px 10px;border-radius:11px;font-size:12px;line-height:1.4;overflow-wrap:anywhere;background:var(--surface,#f1f5f9);align-self:flex-start}
-.filo-chat-msg.mine{align-self:flex-end;background:var(--accent-soft,#e0f2fe)}
-.filo-chat-meta{display:block;font-size:10px;opacity:.72;margin-top:4px}
+.filo-chat-msg{max-width:88%;padding:9px 11px;border-radius:11px;font-size:12px;line-height:1.45;overflow-wrap:anywhere;background:#e8eef7;color:#172033;align-self:flex-start;border:1px solid #cbd8e8;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.filo-chat-msg.mine{align-self:flex-end;background:#176b4d;color:#fff;border-color:#176b4d}
+.filo-chat-meta{display:block;font-size:10px;color:inherit;opacity:.88;margin-top:5px}
+.filo-chat-empty{font-size:12px;color:#52627a;padding:8px 2px}
+.filo-chat-title{font-size:13px;font-weight:800;color:#172033;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.filo-chat-compose input{min-width:0;flex:1;border:1px solid #cbd8e8;border-radius:10px;padding:10px;background:#fff;color:#172033;font:inherit;font-size:12px}
+.filo-chat-open{margin-top:8px;border:1px solid #b8d9ca;border-radius:9px;padding:7px 9px;background:#e8f6ef;color:#14583f;font-size:11px;font-weight:800;cursor:pointer}
+.filo-chat-open:hover{background:#d4efe1}
 .filo-chat-compose{display:flex;gap:7px;align-items:center}
 .filo-chat-compose input{min-width:0;flex:1;border:1px solid var(--border,#dbe4ee);border-radius:10px;padding:10px;background:var(--input-bg,#fff);color:inherit;font:inherit;font-size:12px}
 .filo-chat-send{border:0;border-radius:10px;padding:10px 12px;background:var(--primary,#176b4d);color:#fff;font-weight:800;cursor:pointer}
@@ -2398,61 +2403,100 @@ function autoPeriodFromMonthStart(monthStart){
   if(!/^\d{4}-\d{2}-01$/.test(monthStart||""))return {start:today.slice(0,8)+"01",end:today};
   const key=monthStart.slice(0,7); const b=monthBounds(key); return {start:b.start,end:key===today.slice(0,7)?today:b.end};
 }
+const FILORA_DATE_RANGE_IDS=[
+  "driverStartDate","driverEndDate",
+  "adminStartDate","adminEndDate",
+  "filterStart","filterEnd",
+  "driverEarningsStartDate","driverEarningsEndDate",
+  "adminDeductionStart","adminDeductionEnd",
+  "adminAltStart","adminAltEnd"
+];
+
+function filoraDateRangeStorageKey(id){
+  const userKey=currentUser?.id || "default";
+  return `filorafilo_date_range_${userKey}_${id}`;
+}
+
+function getSavedFiloraDate(id){
+  try{
+    const value=localStorage.getItem(filoraDateRangeStorageKey(id));
+    return /^\\d{4}-\\d{2}-\\d{2}$/.test(value||"") ? value : "";
+  }catch(e){ return ""; }
+}
+
+function saveFiloraDateInput(el){
+  if(!el || !FILORA_DATE_RANGE_IDS.includes(el.id))return;
+  try{
+    if(el.value) localStorage.setItem(filoraDateRangeStorageKey(el.id),el.value);
+    else localStorage.removeItem(filoraDateRangeStorageKey(el.id));
+  }catch(e){}
+}
+
+document.addEventListener("change",event=>{
+  const el=event.target;
+  if(el && el.matches && el.matches('input[type="date"]'))saveFiloraDateInput(el);
+});
+
 function applyAutomaticDateRanges(){
   const dp=autoPeriodFromMonthStart(latestDriverMonthEndStart||latestAdminMonthEndStart);
   const ap=autoPeriodFromMonthStart(latestAdminMonthEndStart||latestDriverMonthEndStart);
-  driverStartDate=dp.start; driverEndDate=dp.end; adminStartDate=ap.start; adminEndDate=ap.end;
-  const ids={driverStartDate:dp.start,driverEndDate:dp.end,adminStartDate:ap.start,adminEndDate:ap.end,filterStart:ap.start,filterEnd:ap.end,adminDeductionStart:ap.start,adminDeductionEnd:ap.end,adminAltStart:ap.start,adminAltEnd:ap.end};
+
+  driverStartDate=getSavedFiloraDate("driverStartDate")||dp.start;
+  driverEndDate=getSavedFiloraDate("driverEndDate")||dp.end;
+  adminStartDate=getSavedFiloraDate("adminStartDate")||ap.start;
+  adminEndDate=getSavedFiloraDate("adminEndDate")||ap.end;
+
+  const ids={
+    driverStartDate:driverStartDate,driverEndDate:driverEndDate,
+    adminStartDate:adminStartDate,adminEndDate:adminEndDate,
+    filterStart:getSavedFiloraDate("filterStart")||adminStartDate,
+    filterEnd:getSavedFiloraDate("filterEnd")||adminEndDate,
+    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||adminStartDate,
+    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||adminEndDate,
+    adminAltStart:getSavedFiloraDate("adminAltStart")||adminStartDate,
+    adminAltEnd:getSavedFiloraDate("adminAltEnd")||adminEndDate
+  };
   Object.entries(ids).forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value;});
-  driverEarningsStartDate=dp.start; driverEarningsEndDate=dp.end;
-  const des=document.getElementById("driverEarningsStartDate"), dee=document.getElementById("driverEarningsEndDate"); if(des)des.value=driverEarningsStartDate; if(dee)dee.value=driverEarningsEndDate;
+
+  driverEarningsStartDate=getSavedFiloraDate("driverEarningsStartDate")||driverStartDate;
+  driverEarningsEndDate=getSavedFiloraDate("driverEarningsEndDate")||driverEndDate;
+  const des=document.getElementById("driverEarningsStartDate"), dee=document.getElementById("driverEarningsEndDate");
+  if(des)des.value=driverEarningsStartDate;
+  if(dee)dee.value=driverEarningsEndDate;
   updateDateLabels();
 }
 
 function initializeDateRanges(){
 
-  const today=
-    getIstanbulDateString();
+  const today=getIstanbulDateString();
+  const monthStart=today.slice(0,8)+"01";
 
-  const monthStart=
-    today.slice(0,8)+"01";
+  driverStartDate=getSavedFiloraDate("driverStartDate")||monthStart;
+  driverEndDate=getSavedFiloraDate("driverEndDate")||today;
+  adminStartDate=getSavedFiloraDate("adminStartDate")||monthStart;
+  adminEndDate=getSavedFiloraDate("adminEndDate")||today;
 
+  const values={
+    driverStartDate:driverStartDate,
+    driverEndDate:driverEndDate,
+    adminStartDate:adminStartDate,
+    adminEndDate:adminEndDate,
+    filterStart:getSavedFiloraDate("filterStart"),
+    filterEnd:getSavedFiloraDate("filterEnd"),
+    driverEarningsStartDate:getSavedFiloraDate("driverEarningsStartDate")||driverStartDate,
+    driverEarningsEndDate:getSavedFiloraDate("driverEarningsEndDate")||driverEndDate,
+    adminDeductionStart:getSavedFiloraDate("adminDeductionStart")||adminStartDate,
+    adminDeductionEnd:getSavedFiloraDate("adminDeductionEnd")||adminEndDate,
+    adminAltStart:getSavedFiloraDate("adminAltStart")||adminStartDate,
+    adminAltEnd:getSavedFiloraDate("adminAltEnd")||adminEndDate
+  };
+  Object.entries(values).forEach(([id,value])=>{
+    const el=document.getElementById(id);
+    if(el && value)el.value=value;
+  });
 
-  driverStartDate=monthStart;
-  driverEndDate=today;
-
-  adminStartDate=monthStart;
-  adminEndDate=today;
-
-
-  const ds=
-    document.getElementById(
-      "driverStartDate"
-    );
-
-  const de=
-    document.getElementById(
-      "driverEndDate"
-    );
-
-  const as=
-    document.getElementById(
-      "adminStartDate"
-    );
-
-  const ae=
-    document.getElementById(
-      "adminEndDate"
-    );
-
-
-  if(ds)ds.value=driverStartDate;
-  if(de)de.value=driverEndDate;
-
-  if(as)as.value=adminStartDate;
-  if(ae)ae.value=adminEndDate;
-
-
+  driverEarningsStartDate=values.driverEarningsStartDate;
+  driverEarningsEndDate=values.driverEarningsEndDate;
   updateDateLabels();
 }
 
@@ -3518,6 +3562,8 @@ function applyDriverDateRange(){
 
   driverStartDate=start;
   driverEndDate=end;
+  saveFiloraDateInput(document.getElementById("driverStartDate"));
+  saveFiloraDateInput(document.getElementById("driverEndDate"));
 
 
   historyDayLimit=7;
@@ -4836,6 +4882,8 @@ function applyAdminDateRange(){
 
   adminStartDate=start;
   adminEndDate=end;
+  saveFiloraDateInput(document.getElementById("adminStartDate"));
+  saveFiloraDateInput(document.getElementById("adminEndDate"));
 
   refreshTripsForPeriod();
 
