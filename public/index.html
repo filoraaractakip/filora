@@ -5280,7 +5280,8 @@ function getCycleInfo(driverId){
           startDate:sDate,startKm:sKm,
           endDate:getRecordDate(r),endKm:km,
           distance:dist,fuel,adblue,
-          consumption:fuel>0 ? fuel/dist*100 : null
+          consumption:fuel>0 ? fuel/dist*100 : null,
+          fromMark:baseKm!==null
         });
       }
 
@@ -7155,7 +7156,16 @@ function dateInRange(date,start,end){
 }
 
 function driverFuelEarnings(driverId,start,end){
-  return records.filter(r=>r.driver_id===driverId && dateInRange(r.fuel_date,start,end)).reduce((sum,r)=>sum+Number(r.fuel_liters||0)*Number(fuelRate||0),0);
+  /* Yakıt kazancı: iki ay sonu işareti arasındaki dönemde
+     (yapılan km ÷ alınan litre) × yakıt katsayısı.
+     Tüketim ne kadar düşükse (km/lt ne kadar yüksekse) kazanç o kadar artar. */
+  const coef=Number(fuelCoef||0);
+  if(!(coef>0))return 0;
+  return getCycleInfo(driverId).closed.reduce((sum,c)=>{
+    if(!c.fromMark || !(c.fuel>0) || !(c.distance>0))return sum;
+    if(!dateInRange(c.endDate,start,end))return sum;
+    return sum+(c.distance/c.fuel)*coef;
+  },0);
 }
 
 function driverKmEarnings(driverId,start,end){
@@ -7269,7 +7279,7 @@ function renderDriverEarnings(){
   document.getElementById("driverTotalEarning").textContent=formatNumber(total,0);
 
   const note=document.getElementById("driverEarningsNote");
-  if(note)note.textContent=`${start||"—"} → ${end||"—"} · Yakıt oranı: ${formatNumber(fuelRate,2)} TL/litre · KM oranı: ${formatNumber(kmRate,2)} TL/km`;
+  if(note)note.textContent=`${start||"—"} → ${end||"—"} · Yakıt katsayısı: ${formatNumber(fuelCoef,2)} (km÷lt × katsayı) · KM oranı: ${formatNumber(kmRate,2)} TL/km`;
 
   const months=buildDriverEarningsMonths(start,end);
   renderDriverEarningsLineChart(months);
@@ -7347,7 +7357,7 @@ function renderAdminDriverEarnings(){
   const period=document.getElementById("driverEarningsAdminPeriod");
   if(period)period.textContent=(start||end) ? `${start||"—"} → ${end||"—"}` : "Tüm dönem";
   const note=document.getElementById("driverEarningsAdminNote");
-  if(note)note.textContent=`Yakıt oranı ${formatNumber(fuelRate,2)} TL/litre · KM oranı ${formatNumber(kmRate,2)} TL/km · ${profiles.length} şoför`;
+  if(note)note.textContent=`Yakıt katsayısı ${formatNumber(fuelCoef,2)} (km÷lt × katsayı) · KM oranı ${formatNumber(kmRate,2)} TL/km · ${profiles.length} şoför`;
 
   const months=buildAdminEarningsMonths(start,end);
   renderEarningsLineChartTo("adminEarningsLineChart",months);
@@ -8924,16 +8934,19 @@ document.addEventListener(
 ========================================================= */
 
 let kmRate=3;   /* Varsayılan: km farkı × 3 TL */
-let fuelRate=0; /* Yakıt oranı: litre × TL/litre */
+let fuelRate=0; /* (eski) Yakıt oranı: litre × TL/litre — artık kullanılmıyor */
+let fuelCoef=0; /* Yakıt katsayısı: (km ÷ litre) × katsayı = TL */
 
 async function loadAppSettings(){
   try{
-    const {data,error}=await supabaseClient.from("app_settings").select("key,value").in("key",["fuel_km_rate","fuel_rate"]);
+    const {data,error}=await supabaseClient.from("app_settings").select("key,value").in("key",["fuel_km_rate","fuel_rate","fuel_coef"]);
     if(!error && Array.isArray(data)){
       const kmRow=data.find(x=>x.key==="fuel_km_rate");
       const fuelRow=data.find(x=>x.key==="fuel_rate");
       if(kmRow && Number(kmRow.value)>=0)kmRate=Number(kmRow.value);
       if(fuelRow && Number(fuelRow.value)>=0)fuelRate=Number(fuelRow.value);
+      const coefRow=data.find(x=>x.key==="fuel_coef");
+      if(coefRow && Number(coefRow.value)>=0)fuelCoef=Number(coefRow.value);
     }
   }catch(e){
     console.warn("app_settings okunamadı, varsayılan oran kullanılıyor.",e);
@@ -8951,6 +8964,19 @@ async function saveFuelRate(){
   renderAdminDriverEarnings();
   renderOptions();
   toast("Yakıt oranı güncellendi.");
+}
+
+async function saveFuelCoef(){
+  const el=document.getElementById("fuelCoefInput");
+  const value=Number(el?.value || 0);
+  if(!(value>=0)){ toast("Geçerli bir yakıt katsayısı girin.","error"); return; }
+  const {error}=await supabaseClient.from("app_settings").upsert({key:"fuel_coef",value},{onConflict:"key"});
+  if(error){ console.error(error); toast("Yakıt katsayısı kaydedilemedi: "+error.message,"error"); return; }
+  fuelCoef=value;
+  renderDriverEarnings();
+  renderAdminDriverEarnings();
+  renderOptions();
+  toast("Yakıt katsayısı güncellendi.");
 }
 
 async function saveKmRate(){
@@ -9336,12 +9362,12 @@ function renderOptions(){
     panel("load","Yükleme yerleri","Örn. KAPTAN D.Ç")+
     panel("amount","Sefer tutarları (TL)","Örn. 300","Sırayla <b>Kısa</b> (kırmızı), <b>Orta</b> (sarı) ve <b>Uzun</b> (yeşil) olarak renklenir. Raporlarda da aynı renkler kullanılır.")+
     `<section class="admin-card">
-        <div class="panel-head"><h2>Yakıt oranı kazancı</h2><span>Şoför kazancı</span></div>
-        <p class="page-subtitle">Yakıt kayıtlarındaki mazot litresi × bu oran şeklinde hesaplanır. Sefer ve KM kazancından ayrı gösterilir.</p>
+        <div class="panel-head"><h2>Yakıt kazancı katsayısı</h2><span>Şoför kazancı</span></div>
+        <p class="page-subtitle">İki ay sonu işareti arasındaki dönemde <b>(yapılan km ÷ alınan litre) × katsayı</b> şeklinde hesaplanır. Tüketim düştükçe kazanç artar. Sefer ve KM kazancından ayrı gösterilir.</p>
         <div class="opt-add">
-          <input type="number" id="fuelRateInput" inputmode="decimal" min="0" step="0.01" value="${fuelRate}">
-          <span style="align-self:center;color:var(--muted);font-size:13px">TL / litre</span>
-          <button type="button" class="btn-orange btn-sm" onclick="saveFuelRate()">Kaydet</button>
+          <input type="number" id="fuelCoefInput" inputmode="decimal" min="0" step="0.01" value="${fuelCoef}">
+          <span style="align-self:center;color:var(--muted);font-size:13px">TL × (km/lt)</span>
+          <button type="button" class="btn-orange btn-sm" onclick="saveFuelCoef()">Kaydet</button>
         </div>
       </section>`+
     `<section class="admin-card">
