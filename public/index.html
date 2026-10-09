@@ -1621,8 +1621,10 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 
             <div class="filters">
               <input type="text" id="recordSearch" placeholder="Şoför veya plaka ara" aria-label="Şoför veya plaka ara">
-              
-              
+              <label class="date-range-group" for="recordsStartDate" style="display:flex;flex-direction:column;gap:5px">
+                <span>Başlangıç tarihi</span>
+                <input type="date" id="recordsStartDate" aria-label="Yakıt kayıtları başlangıç tarihi">
+              </label>
               <button type="button" class="btn-secondary" id="clearFiltersButton">Temizle</button>
             </div>
             <div class="bulk-toolbar">
@@ -2396,17 +2398,26 @@ async function loadLatestMonthEndPeriod(scope="admin"){
     const {data,error}=await q;
     if(error)throw error;
     const latest=data?.[0]?.fuel_date || (data?.[0]?.created_at ? getIstanbulDateString(new Date(data[0].created_at)) : "");
-    if(scope==="driver")latestDriverMonthEndStart=latest; else latestAdminMonthEndStart=latest;
+    if(scope==="driver")latestDriverMonthEndStart=latest; else {
+      latestAdminMonthEndStart=latest;
+      const today=getIstanbulDateString();
+      const defaultStart=latest || (today.slice(0,8)+"01");
+      const savedStart=getSavedFiloraDate("recordsStartDate");
+      const input=document.getElementById("recordsStartDate");
+      if(input)input.value=savedStart || defaultStart;
+      recordsStartDate=savedStart || defaultStart;
+    }
   }catch(e){console.warn("Son ay sonu dönemi okunamadı:",e);}
 }
 function autoPeriodFromMonthStart(monthEndDate){
   const today=getIstanbulDateString();
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(monthEndDate||""))return {start:today.slice(0,8)+"01",end:today};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(monthEndDate||""))return {start:today.slice(0,8)+"01",end:today};
   return {start:monthEndDate,end:today};
 }
 const FILORA_DATE_RANGE_IDS=[
   "driverStartDate","driverEndDate",
   "adminStartDate","adminEndDate",
+  "recordsStartDate",
   "filterStart","filterEnd",
   "driverEarningsStartDate","driverEarningsEndDate",
   "adminDeductionStart","adminDeductionEnd",
@@ -2421,7 +2432,7 @@ function filoraDateRangeStorageKey(id){
 function getSavedFiloraDate(id){
   try{
     const value=localStorage.getItem(filoraDateRangeStorageKey(id));
-    return /^\\d{4}-\\d{2}-\\d{2}$/.test(value||"") ? value : "";
+    return /^\d{4}-\d{2}-\d{2}$/.test(value||"") ? value : "";
   }catch(e){ return ""; }
 }
 
@@ -2482,6 +2493,7 @@ function initializeDateRanges(){
     driverEndDate:driverEndDate,
     adminStartDate:adminStartDate,
     adminEndDate:adminEndDate,
+    recordsStartDate:getSavedFiloraDate("recordsStartDate") || (latestAdminMonthEndStart || monthStart),
     filterStart:getSavedFiloraDate("filterStart"),
     filterEnd:getSavedFiloraDate("filterEnd"),
     driverEarningsStartDate:getSavedFiloraDate("driverEarningsStartDate")||driverStartDate,
@@ -2496,6 +2508,7 @@ function initializeDateRanges(){
     if(el && value)el.value=value;
   });
 
+  recordsStartDate=values.recordsStartDate;
   driverEarningsStartDate=values.driverEarningsStartDate;
   driverEarningsEndDate=values.driverEarningsEndDate;
   updateDateLabels();
@@ -7605,6 +7618,7 @@ function renderAdminVehicles(){
 
 let recordLimit=15;
 let lastRecordSig="";
+let recordsStartDate="";
 
 function renderRecords(){
 
@@ -7612,10 +7626,11 @@ function renderRecords(){
   const more=document.getElementById("recordsMore");
 
   const search=document.getElementById("recordSearch").value.trim().toLowerCase();
-  const start="";
-  const end="";
+  const start=document.getElementById("recordsStartDate")?.value || recordsStartDate || "";
+  const end=getIstanbulDateString();
+  recordsStartDate=start;
 
-  let list=filterRecordsByDateRange(records,adminStartDate,adminEndDate);
+  let list=records.filter(record=>dateInRange(getRecordDate(record),start,end));
 
   if(search){
     list=list.filter(record=>{
@@ -8044,16 +8059,12 @@ function clearFilters(){
   ).value="";
 
 
-  document.getElementById(
-    "filterStart"
-  ).value="";
-
-
-  document.getElementById(
-    "filterEnd"
-  ).value="";
-
-
+  const today=getIstanbulDateString();
+  const defaultStart=latestAdminMonthEndStart || (today.slice(0,8)+"01");
+  recordsStartDate=defaultStart;
+  const startInput=document.getElementById("recordsStartDate");
+  if(startInput)startInput.value=defaultStart;
+  try{localStorage.removeItem(filoraDateRangeStorageKey("recordsStartDate"));}catch(e){}
   renderRecords();
 }
 
@@ -8708,8 +8719,7 @@ document.addEventListener(
 
     [
       "recordSearch",
-      "filterStart",
-      "filterEnd"
+      "recordsStartDate"
     ].forEach(id=>{
 
       const element=
