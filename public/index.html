@@ -751,6 +751,7 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
 .fuel-grand-total strong{font-size:18px;color:var(--orange-hi);font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:600px){.fuel-total-columns{grid-template-columns:1fr}.fuel-total-box{padding:12px}.fuel-grand-total span{font-size:16px}.fuel-grand-total strong{font-size:17px}}
 
+.filora-tank-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}.tank-gauge{position:relative;height:112px;border:3px solid #94a3b8;border-radius:20px;overflow:hidden;background:#e2e8f022;display:flex;align-items:center;justify-content:center}.tank-liquid{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(#f7c35b,#e58a16);transition:height .35s}.tank-gauge strong{position:relative;font-size:28px;color:var(--text);text-shadow:0 1px 3px #fff}.tank-stats{display:flex;justify-content:space-between;gap:12px;margin:14px 0}.tank-stats>div{font-size:12px;color:var(--muted)}.tank-stats strong{display:block;font-size:18px;color:var(--text)}@media(max-width:850px){.filora-tank-grid{grid-template-columns:1fr}}
 </style>
 <style>
 /* Araç durumu / yönetici bildirimleri — mevcut tasarıma ek, mevcut veriye dokunmaz */
@@ -1022,6 +1023,14 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
           <button class="filo-chat-send" type="submit">Gönder</button>
         </form>
       </div>
+    </section>
+
+    <section class="panel" aria-labelledby="driverTankTitle"><div class="panel-head"><h2 id="driverTankTitle">⛽ İşletme deposundan mazot alımı</h2></div>
+    <p class="page-subtitle">Yalnızca şirket deposundan aldığınız mazotu buraya girin. Onayladığınız miktar tank stokundan otomatik düşer. Benzinlik alımları için mevcut yakıt kaydını kullanın.</p>
+    <p>Depoda kalan: <strong id="driverTankBalance">— LT</strong></p>
+    <div class="field"><label for="driverTankLiters">Alınan mazot (LT)</label><input id="driverTankLiters" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Örn. 150"></div>
+    <div class="field"><label for="driverTankPlate">Araç plakası</label><input id="driverTankPlate" type="text" maxlength="20" placeholder="Plaka"></div>
+    <button type="button" class="btn-orange" id="driverTankSave" onclick="driverTakeTankFuel()">Depodan alımı kaydet</button><div class="status" id="driverTankStatus" role="status"></div>
     </section>
 
     <!-- KAYIT EKLE -->
@@ -1665,7 +1674,15 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
             </div>
           </div>
 
-          <section class="panel" aria-labelledby="overviewDonutTitle"><div class="panel-head"><h2 id="overviewDonutTitle">Yakıt ve AdBlue dağılımı</h2><span>Seçili tarih aralığı</span></div><div class="overview-donut-wrap"><div id="overviewDonut" class="overview-donut" role="img" aria-label="Yakıt ve AdBlue miktarlarının dairesel grafiği"><div class="overview-donut-center"><strong id="overviewDonutTotal">0</strong><span>litre</span></div></div><div class="overview-donut-legend"><div><i class="donut-key fuel-key"></i><span>Yakıt</span><strong id="overviewDonutFuel">0 lt</strong></div><div><i class="donut-key adblue-key"></i><span>AdBlue</span><strong id="overviewDonutAdblue">0 lt</strong></div></div></div></section><div class="stats stats-3" style="margin-bottom:16px">
+          <div class="filora-tank-grid"><section class="panel" aria-labelledby="overviewDonutTitle"><div class="panel-head"><h2 id="overviewDonutTitle">Yakıt ve AdBlue dağılımı</h2><span>Seçili tarih aralığı</span></div><div class="overview-donut-wrap"><div id="overviewDonut" class="overview-donut" role="img" aria-label="Yakıt ve AdBlue miktarlarının dairesel grafiği"><div class="overview-donut-center"><strong id="overviewDonutTotal">0</strong><span>litre</span></div></div><div class="overview-donut-legend"><div><i class="donut-key fuel-key"></i><span>Yakıt</span><strong id="overviewDonutFuel">0 lt</strong></div><div><i class="donut-key adblue-key"></i><span>AdBlue</span><strong id="overviewDonutAdblue">0 lt</strong></div></div></div></section>
+          <section class="panel" aria-labelledby="tankTitle"><div class="panel-head"><h2 id="tankTitle">⛽ Akaryakıt tankı</h2></div>
+          <div class="tank-gauge"><div class="tank-liquid" id="tankLiquid"></div><strong id="tankPercent">—</strong></div>
+          <div class="tank-stats"><div>Kalan mazot<strong id="tankBalance">— LT</strong></div><div>Kapasite<strong id="tankCapacity">— LT</strong></div></div>
+          <div class="field"><label for="tankAddLiters">Depoya gelen mazot (LT)</label><input type="number" id="tankAddLiters" min="0.01" step="0.01" placeholder="Örn. 5000"></div>
+          <div class="field"><label for="tankCapacityInput">Tank kapasitesi (LT, isteğe bağlı)</label><input type="number" id="tankCapacityInput" min="1" step="0.01" placeholder="Örn. 10000"></div>
+          <button type="button" class="btn-orange" onclick="adminAddTankFuel()">Depoya yakıt ekle / kapasiteyi güncelle</button><div id="tankAdminStatus" class="status" role="status"></div>
+          <h3 style="margin-top:18px">Son tank hareketleri</h3><div id="tankMovements" style="max-height:260px;overflow:auto"></div></section></div>
+          <div class="stats stats-3" style="margin-bottom:16px">
             <div class="stat">
               <div class="stat-label">Sefer</div>
               <div class="stat-value"><span id="adminTripCount">—</span></div>
@@ -4555,11 +4572,11 @@ function toggleAdminChatDock(force){
 function renderAdminChatSelect(){
   const sel=document.getElementById("adminChatDriverSelect"); if(!sel)return;
   const cur=activeAdminChatDriverId||sel.value||"";
-  sel.innerHTML='<option value="">Şoför seçin…</option>'+profiles.filter(p=>p.role==="driver").sort((a,b)=>((adminChatUnread[b.id]||0)-(adminChatUnread[a.id]||0))||String(a.full_name||"").localeCompare(String(b.full_name||""),"tr")).map(p=>{
+  sel.innerHTML='<option value="">Şoför seçin…</option>'+profiles.filter(p=>p.role==="driver" && p.active===true).sort((a,b)=>((adminChatUnread[b.id]||0)-(adminChatUnread[a.id]||0))||String(a.full_name||"").localeCompare(String(b.full_name||""),"tr")).map(p=>{
     const u=adminChatUnread[p.id]||0;
     return `<option value="${escapeHtml(p.id)}">${u?`💬 (${u}) `:""}${escapeHtml(p.full_name||"Şoför")}${p.plate?" · "+escapeHtml(p.plate):""}</option>`;
   }).join("");
-  sel.value=cur;
+  if(!profiles.some(p=>p.id===cur && p.active===true)){activeAdminChatDriverId=null;activeAdminChatDriverName="";sel.value="";const log=document.getElementById("adminDriverChatLog");if(log)log.innerHTML="";}else sel.value=cur;
 }
 function onAdminChatSelect(sel){
   const id=sel.value; if(!id)return;
@@ -4601,7 +4618,7 @@ async function loadAdminChatUnread(){
     const {data,error}=await supabaseClient.from(FILO_MSG).select("driver_id,sender_id").is("read_at",null).limit(500);
     if(error)throw error;
     adminChatUnread={};
-    (data||[]).forEach(m=>{if(m.sender_id===m.driver_id)adminChatUnread[m.driver_id]=(adminChatUnread[m.driver_id]||0)+1;});
+    (data||[]).forEach(m=>{if(m.sender_id===m.driver_id && profiles.some(p=>p.id===m.driver_id && p.active===true))adminChatUnread[m.driver_id]=(adminChatUnread[m.driver_id]||0)+1;});
     adminChatUnreadChanged();
   }catch(e){console.warn("Okunmamış mesajlar alınamadı:",e);}
 }
@@ -4686,6 +4703,7 @@ async function loadAdminData(){
 
     renderMonthlyStarts();
     renderDriverManagement();
+    refreshTank();
     renderAdminVehicles();
     renderAdminStats();
     renderRecords();
@@ -9595,6 +9613,8 @@ function showDriverTab(tab){
   toggleDriverSidebar(false);
   window.scrollTo(0,0);
 
+  if(tab==="fuel")refreshTank();
+
   if(tab==="earnings"){
     renderDriverEarnings();
   }
@@ -10397,37 +10417,54 @@ async function deleteAnnouncement(id){
    YÖNETİCİ: ŞOFÖR EKLE / DÜZENLE (telefon dahil)
 ========================================================= */
 
-function renderDriverManagement(){
-
-  const cnt=document.getElementById("driversCount");
-  if(cnt)cnt.textContent=profiles.length ? profiles.length+" şoför" : "";
-
-  const box=document.getElementById("driverManagement");
-
-  if(!profiles.length){
-    box.innerHTML=`<div class="empty">Şoför bulunmuyor.</div>`;
-    return;
+/* Depo işlemleri yalnızca sunucudaki atomik RPC fonksiyonlarıyla yürütülür. */
+async function refreshTank(){
+  const {data,error}=await supabaseClient.from("filora_tank").select("capacity_liters,balance_liters").eq("id",1).maybeSingle();
+  if(error){console.warn("Tank yüklenemedi:",error.message);return;}
+  const bal=Number(data?.balance_liters||0),cap=Number(data?.capacity_liters||0);
+  const fmt=n=>n.toLocaleString("tr-TR",{maximumFractionDigits:2})+" LT";
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  const plateEl=document.getElementById("driverTankPlate");if(plateEl&&!plateEl.value&&currentProfile?.plate)plateEl.value=currentProfile.plate;
+  set("tankBalance",fmt(bal));set("tankCapacity",fmt(cap));set("driverTankBalance",fmt(bal));
+  const pct=cap>0?Math.min(100,Math.max(0,bal/cap*100)):0;
+  set("tankPercent",cap>0?pct.toLocaleString("tr-TR",{maximumFractionDigits:1})+"%":"—");
+  const liquid=document.getElementById("tankLiquid");if(liquid)liquid.style.height=pct+"%";
+  if(currentProfile?.role==="admin"){
+    const {data:movements,error:me}=await supabaseClient.from("filora_tank_movements").select("liters,kind,plate,created_at,driver_id").order("created_at",{ascending:false}).limit(15);
+    const box=document.getElementById("tankMovements");
+    if(box && !me)box.innerHTML=(movements||[]).map(m=>`<div class="driver-row"><span>${escapeHtml(new Date(m.created_at).toLocaleString("tr-TR"))} • ${m.kind==="in"?"Giriş":"Şoför alımı"} ${escapeHtml(m.plate||"")}</span><strong>${m.kind==="in"?"+":"−"}${fmt(Number(m.liters))}</strong></div>`).join("")||"Henüz işlem yok.";
   }
-
-  box.innerHTML=profiles.map(profile=>`
-    <div class="driver-row">
-      <div>
-        <strong>${escapeHtml(profile.full_name || "İsimsiz")}</strong>
-        <small>
-          ${escapeHtml(profile.plate || "Plaka yok")}
-          •
-          ${profile.phone ? telLink(profile.phone) : "Telefon yok"}
-          •
-          ${profile.active ? "Aktif" : "Pasif"}
-        </small>
-      </div>
-      <div class="actions">
-        <button onclick="openDriverModal('${profile.id}')">Düzenle</button>
-        <button onclick="toggleDriver('${profile.id}')">${profile.active ? "Pasifleştir" : "Aktifleştir"}</button>
-        <button class="danger" onclick="deleteDriver('${profile.id}')">Sil</button>
-      </div>
-    </div>
-  `).join("");
+}
+async function adminAddTankFuel(){
+  const liters=Number(document.getElementById("tankAddLiters").value||0);
+  const capInput=document.getElementById("tankCapacityInput").value.trim();
+  const capacity=capInput?Number(capInput):null;
+  if((!Number.isFinite(liters)||liters<0)||(!liters&&!capacity)|| (capacity!==null&&(!Number.isFinite(capacity)||capacity<=0))){showStatus("tankAdminStatus","Geçerli litre veya kapasite girin.","error");return;}
+  if(!confirm("Depo stokunu güncellemek istiyor musunuz?"))return;
+  try{const {error}=await supabaseClient.rpc("filora_tank_admin_add",{p_liters:liters,p_capacity:capacity});if(error)throw error;
+    document.getElementById("tankAddLiters").value="";document.getElementById("tankCapacityInput").value="";
+    showStatus("tankAdminStatus","Tank güncellendi.","success");await refreshTank();
+  }catch(e){showStatus("tankAdminStatus",e.message||"Tank güncellenemedi.","error");}
+}
+async function driverTakeTankFuel(){
+  const liters=Number(document.getElementById("driverTankLiters").value);
+  const plate=document.getElementById("driverTankPlate").value.trim().toUpperCase();
+  if(!Number.isFinite(liters)||liters<=0||!plate){showStatus("driverTankStatus","Pozitif litre ve araç plakası girin.","error");return;}
+  if(!confirm(plate+" için "+liters+" LT depodan alımı onaylıyor musunuz? Stoktan düşülecek."))return;
+  const btn=document.getElementById("driverTankSave");btn.disabled=true;
+  try{const {error}=await supabaseClient.rpc("filora_tank_driver_take",{p_liters:liters,p_plate:plate});if(error)throw error;
+    document.getElementById("driverTankLiters").value="";showStatus("driverTankStatus","Alım kaydedildi ve stoktan düşüldü.","success");await refreshTank();
+  }catch(e){showStatus("driverTankStatus",e.message||"Alım kaydedilemedi.","error");}finally{btn.disabled=false;}
+}
+function renderDriverManagement(){
+  const active=profiles.filter(p=>p.active===true);
+  const archived=profiles.filter(p=>p.active!==true);
+  const cnt=document.getElementById("driversCount");
+  if(cnt)cnt.textContent=active.length+" aktif şoför";
+  const row=p=>`<div class="driver-row"><div><strong>${escapeHtml(p.full_name||"İsimsiz")}</strong><small>${escapeHtml(p.plate||"Plaka yok")} • ${p.phone?telLink(p.phone):"Telefon yok"} • ${p.active?"Aktif":"Arşivde"}</small></div><div class="actions"><button onclick="openDriverModal('${p.id}')">Düzenle</button><button onclick="toggleDriver('${p.id}')">${p.active?"Arşive al":"Aktifleştir"}</button></div></div>`;
+  const box=document.getElementById("driverManagement");
+  box.innerHTML=(active.length?active.map(row).join(""):'<div class="empty">Aktif şoför bulunmuyor.</div>')+
+    `<details class="driver-archive" style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px"><summary style="cursor:pointer;font-weight:700">📁 Arşiv (${archived.length})</summary><div style="padding-top:12px">${archived.length?archived.map(row).join(""):'<div class="empty">Arşiv boş.</div>'}</div></details>`;
 }
 
 async function saveDriver(){
@@ -10473,34 +10510,15 @@ async function saveDriver(){
       }
 
       if(fnError){
-
         console.error("manage-driver:",fnError);
-
-        const reason=await fnErrorMessage(fnError,"Kullanıcı adı veya şifre değiştirilemedi.");
-        const sameUser=String(orig.username || "").toLowerCase()===username.toLowerCase();
-
-        if(!sameUser){
-          throw new Error(reason);
+        const reason=await fnErrorMessage(fnError,"Sunucu fonksiyonu kullanılamıyor.");
+        if(password || String(orig.username||"").toLowerCase()!==username.toLowerCase()){
+          throw new Error("Kullanıcı adı veya şifre değişikliği için manage-driver sunucu fonksiyonu gereklidir. "+reason);
         }
-
-        /* Sunucu fonksiyonu çalışmadıysa ad, telefon ve plakayı doğrudan kaydet */
-        const {data,error}=await supabaseClient
-          .from("profiles")
-          .update({full_name:fullName,phone:phone || null,plate:plate})
-          .eq("id",editId)
-          .select("id");
-
-        if(error)throw error;
-
-        if(!data || !data.length){
-          throw new Error("Kayıt yapılamadı: yetki yok. Supabase'de filora_guncelleme.sql dosyasını çalıştırın.");
-        }
-
-        if(password){
-          await loadAdminData();
-          showStatus("driverModalStatus","Ad, telefon ve plaka kaydedildi. Şifre değiştirilemedi: "+reason,"error");
-          return;
-        }
+        const {error}=await supabaseClient.rpc("filora_update_driver_profile",{
+          p_driver_id:editId,p_full_name:fullName,p_phone:phone||null,p_plate:plate
+        });
+        if(error)throw new Error("Şoför bilgileri kaydedilemedi: "+error.message+". Önce FILORA_KURULUM.sql dosyasını Supabase SQL Editor'da çalıştırın.");
       }
 
     }else{
@@ -10538,7 +10556,7 @@ async function saveDriver(){
 
 async function toggleDriver(driverId){
 
-  if(!confirm("Şoförün aktiflik durumunu değiştirmek istiyor musunuz?"))return;
+  if(!confirm("Şoförün aktiflik durumunu değiştirmek istiyor musunuz? Arşivlenen şoför mesaj listesinde görünmeyecektir."))return;
 
   const p=profiles.find(x=>x.id===driverId);
 
@@ -10559,20 +10577,13 @@ async function toggleDriver(driverId){
 
       if(!p)throw fnError;
 
-      const {data,error}=await supabaseClient
-        .from("profiles")
-        .update({active:!p.active})
-        .eq("id",driverId)
-        .select("id");
-
-      if(error)throw error;
-
-      if(!data || !data.length){
-        throw new Error("Yetki yok. Supabase'de filora_guncelleme.sql dosyasını çalıştırın.");
-      }
+      const {error}=await supabaseClient.rpc("filora_set_driver_active",{p_driver_id:driverId,p_active:!p.active});
+      if(error)throw new Error(error.message+" (FILORA_KURULUM.sql dosyasını uygulayın.)");
     }
 
     await loadAdminData();
+    renderAdminChatSelect();
+    await loadAdminChatUnread();
 
   }catch(error){
     console.error(error);
