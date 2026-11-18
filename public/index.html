@@ -1025,19 +1025,12 @@ label[for="docEnhance"]{display:flex;align-items:center;justify-content:space-be
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="driverTankTitle"><div class="panel-head"><h2 id="driverTankTitle">⛽ İşletme deposundan mazot alımı</h2></div>
-    <p class="page-subtitle">Yalnızca şirket deposundan aldığınız mazotu buraya girin. Onayladığınız miktar tank stokundan otomatik düşer. Benzinlik alımları için mevcut yakıt kaydını kullanın.</p>
-    <p>Depoda kalan: <strong id="driverTankBalance">— LT</strong></p>
-    <div class="field"><label for="driverTankLiters">Alınan mazot (LT)</label><input id="driverTankLiters" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Örn. 150"></div>
-    <div class="field"><label for="driverTankPlate">Araç plakası</label><input id="driverTankPlate" type="text" maxlength="20" placeholder="Plaka"></div>
-    <button type="button" class="btn-orange" id="driverTankSave" onclick="driverTakeTankFuel()">Depodan alımı kaydet</button><div class="status" id="driverTankStatus" role="status"></div>
-    </section>
-
     <!-- KAYIT EKLE -->
     <section class="panel" aria-labelledby="addRecordTitle">
 
       <div class="panel-head">
         <h2 id="addRecordTitle">Kayıt ekle</h2>
+        <p class="page-subtitle">Mazot kayıtları işletme tankından otomatik düşer. AdBlue tankı etkilemez.</p>
       </div>
 
       <div class="field">
@@ -10424,8 +10417,7 @@ async function refreshTank(){
   const bal=Number(data?.balance_liters||0),cap=Number(data?.capacity_liters||0);
   const fmt=n=>n.toLocaleString("tr-TR",{maximumFractionDigits:2})+" LT";
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  const plateEl=document.getElementById("driverTankPlate");if(plateEl&&!plateEl.value&&currentProfile?.plate)plateEl.value=currentProfile.plate;
-  set("tankBalance",fmt(bal));set("tankCapacity",fmt(cap));set("driverTankBalance",fmt(bal));
+  set("tankBalance",fmt(bal));set("tankCapacity",fmt(cap));
   const pct=cap>0?Math.min(100,Math.max(0,bal/cap*100)):0;
   set("tankPercent",cap>0?pct.toLocaleString("tr-TR",{maximumFractionDigits:1})+"%":"—");
   const liquid=document.getElementById("tankLiquid");if(liquid)liquid.style.height=pct+"%";
@@ -10445,16 +10437,6 @@ async function adminAddTankFuel(){
     document.getElementById("tankAddLiters").value="";document.getElementById("tankCapacityInput").value="";
     showStatus("tankAdminStatus","Tank güncellendi.","success");await refreshTank();
   }catch(e){showStatus("tankAdminStatus",e.message||"Tank güncellenemedi.","error");}
-}
-async function driverTakeTankFuel(){
-  const liters=Number(document.getElementById("driverTankLiters").value);
-  const plate=document.getElementById("driverTankPlate").value.trim().toUpperCase();
-  if(!Number.isFinite(liters)||liters<=0||!plate){showStatus("driverTankStatus","Pozitif litre ve araç plakası girin.","error");return;}
-  if(!confirm(plate+" için "+liters+" LT depodan alımı onaylıyor musunuz? Stoktan düşülecek."))return;
-  const btn=document.getElementById("driverTankSave");btn.disabled=true;
-  try{const {error}=await supabaseClient.rpc("filora_tank_driver_take",{p_liters:liters,p_plate:plate});if(error)throw error;
-    document.getElementById("driverTankLiters").value="";showStatus("driverTankStatus","Alım kaydedildi ve stoktan düşüldü.","success");await refreshTank();
-  }catch(e){showStatus("driverTankStatus",e.message||"Alım kaydedilemedi.","error");}finally{btn.disabled=false;}
 }
 function renderDriverManagement(){
   const active=profiles.filter(p=>p.active===true);
